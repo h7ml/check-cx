@@ -20,6 +20,23 @@ const DEFAULT_TIMEOUT_MS = 15_000;
 const DEGRADED_THRESHOLD_MS = 6_000;
 
 /**
+ * 扩展 globalThis 以在 dev 热更时复用 OpenAI 客户端
+ */
+declare global {
+  var __CHECK_CX_OPENAI_CLIENTS__:
+    | Map<string, OpenAI>
+    | undefined;
+}
+
+/**
+ * OpenAI 客户端全局缓存
+ * key = baseURL + apiKey，用于复用连接和内部缓存
+ */
+const openAIClientCache: Map<string, OpenAI> =
+  globalThis.__CHECK_CX_OPENAI_CLIENTS__ ??
+  (globalThis.__CHECK_CX_OPENAI_CLIENTS__ = new Map<string, OpenAI>());
+
+/**
  * 从配置的 endpoint 推导 openai SDK 的 baseURL
  *
  * - 支持默认的 https://api.openai.com/v1/chat/completions
@@ -51,6 +68,33 @@ function deriveOpenAIBaseURL(endpoint: string | null | undefined): string {
 }
 
 /**
+ * 获取（或创建）复用的 OpenAI 客户端
+ */
+function getOpenAIClient(config: ProviderConfig): OpenAI {
+  const baseURL = deriveOpenAIBaseURL(config.endpoint);
+  const cacheKey = `${baseURL}::${config.apiKey}`;
+
+  const cached = openAIClientCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const client = new OpenAI({
+    apiKey: config.apiKey,
+    baseURL,
+    // 某些代理/网关（例如启用了 Cloudflare「封锁 AI 爬虫」规则的站点）
+    // 会对默认的 OpenAI User-Agent（如 `OpenAI/TS ...`）返回 402 Your request was blocked.
+    // 这里统一改成一个普通应用的 UA，避免被误判为爬虫。
+    defaultHeaders: {
+      "User-Agent": "check-cx/0.1.0",
+    },
+  });
+
+  openAIClientCache.set(cacheKey, client);
+  return client;
+}
+
+/**
  * 检查 OpenAI API 健康状态（流式）
  */
 export async function checkOpenAI(
@@ -63,16 +107,7 @@ export async function checkOpenAI(
   const displayEndpoint = config.endpoint || DEFAULT_ENDPOINTS.openai;
 
   try {
-    const client = new OpenAI({
-      apiKey: config.apiKey,
-      baseURL: deriveOpenAIBaseURL(config.endpoint),
-      // 某些代理/网关（例如启用了 Cloudflare「封锁 AI 爬虫」规则的站点）
-      // 会对默认的 OpenAI User-Agent（如 `OpenAI/TS ...`）返回 402 Your request was blocked.
-      // 这里统一改成一个普通应用的 UA，避免被误判为爬虫。
-      defaultHeaders: {
-        "User-Agent": "check-cx/0.1.0",
-      },
-    });
+    const client = getOpenAIClient(config);
 
     // 使用 Chat Completions 流式接口进行最小请求
     const stream = await client.chat.completions.create(
