@@ -5,13 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ProviderIcon } from "@/components/provider-icon";
 import { StatusTimeline } from "@/components/status-timeline";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DashboardData } from "@/lib/types";
 import { PROVIDER_LABEL, STATUS_META } from "@/lib/core/status";
 import { formatLocalTime } from "@/lib/utils";
@@ -31,12 +25,13 @@ const getLatestCheckTimestamp = (
 
 const computeRemainingMs = (
   pollIntervalMs: number | null | undefined,
-  latestCheckTimestamp: number | null
+  latestCheckTimestamp: number | null,
+  clock: number = Date.now()
 ) => {
   if (!pollIntervalMs || pollIntervalMs <= 0 || latestCheckTimestamp === null) {
     return null;
   }
-  const remaining = pollIntervalMs - (Date.now() - latestCheckTimestamp);
+  const remaining = pollIntervalMs - (clock - latestCheckTimestamp);
   return Math.max(0, remaining);
 };
 
@@ -50,7 +45,8 @@ export function DashboardView({ initialData }: DashboardViewProps) {
   const [timeToNextRefresh, setTimeToNextRefresh] = useState<number | null>(() =>
     computeRemainingMs(
       initialData.pollIntervalMs,
-      getLatestCheckTimestamp(initialData.providerTimelines)
+      getLatestCheckTimestamp(initialData.providerTimelines),
+      initialData.generatedAt
     )
   );
   const latestCheckTimestamp = useMemo(
