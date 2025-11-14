@@ -120,6 +120,7 @@ export async function loadDashboardData(options?: {
     );
 
   const lastUpdated = allEntries.length ? allEntries[0].checkedAt : null;
+  const generatedAt = Date.now();
 
   return {
     providerTimelines,
@@ -127,5 +128,6 @@ export async function loadDashboardData(options?: {
     total: providerTimelines.length,
     pollIntervalLabel,
     pollIntervalMs,
+    generatedAt,
   };
 }
