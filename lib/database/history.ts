@@ -36,8 +36,7 @@ export async function loadHistory(): Promise<HistorySnapshot> {
         )
       `
       )
-      .order("checked_at", { ascending: false })
-      .limit(MAX_POINTS_PER_PROVIDER * 10); // 预留足够的数据
+      .order("checked_at", { ascending: false });
 
     if (error) {
       logError("从数据库读取历史记录失败", error);
