@@ -45,7 +45,7 @@ class SnapshotStore {
     }
 
     const supabase = await createClient();
-    const { data, error } = await supabase.rpc<RpcHistoryRow[]>(
+    const { data, error } = await supabase.rpc(
       RPC_RECENT_HISTORY,
       {
         limit_per_config: MAX_POINTS_PER_PROVIDER,
@@ -61,7 +61,7 @@ class SnapshotStore {
       return {};
     }
 
-    return mapRowsToSnapshot(data);
+    return mapRowsToSnapshot(data as RpcHistoryRow[] | null);
   }
 
   async append(results: CheckResult[]): Promise<void> {
@@ -205,7 +205,7 @@ async function fallbackFetchSnapshot(
         ping_latency_ms,
         checked_at,
         message,
-        check_configs!fk_config (
+        check_configs (
           id,
           name,
           type,
@@ -229,10 +229,11 @@ async function fallbackFetchSnapshot(
 
     const history: HistorySnapshot = {};
     for (const record of data || []) {
-      const config = record.check_configs;
-      if (!config) {
+      const configs = record.check_configs;
+      if (!configs || !Array.isArray(configs) || configs.length === 0) {
         continue;
       }
+      const config = configs[0];
 
       const result: CheckResult = {
         id: config.id,
