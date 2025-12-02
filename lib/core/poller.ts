@@ -10,8 +10,6 @@ import { getPollingIntervalMs } from "./polling-config";
 import {
   getPollerTimer,
   setPollerTimer,
-  isPollerRunning,
-  setPollerRunning,
   getLastPingStartedAt,
   setLastPingStartedAt,
 } from "./global-state";
@@ -24,7 +22,8 @@ const POLL_INTERVAL_MS = getPollingIntervalMs();
  * 执行一次轮询检查
  */
 async function tick() {
-  if (isPollerRunning()) {
+  // 原子操作：检查并设置运行状态
+  if (globalThis.__checkCxPollerRunning) {
     const lastStartedAt = getLastPingStartedAt();
     const duration = lastStartedAt ? Date.now() - lastStartedAt : null;
     console.log(
@@ -34,6 +33,7 @@ async function tick() {
     );
     return;
   }
+  globalThis.__checkCxPollerRunning = true;
 
   const startedAt = Date.now();
   setLastPingStartedAt(startedAt);
@@ -42,8 +42,6 @@ async function tick() {
       startedAt
     ).toISOString()} · interval=${POLL_INTERVAL_MS}ms`
   );
-
-  setPollerRunning(true);
   try {
     const allConfigs = await loadProviderConfigsFromDB();
     // 过滤掉维护中的配置
@@ -109,7 +107,7 @@ async function tick() {
   } catch (error) {
     console.error("[check-cx] 轮询检测失败", error);
   } finally {
-    setPollerRunning(false);
+    globalThis.__checkCxPollerRunning = false;
   }
 }
 
