@@ -175,7 +175,11 @@ export async function checkOpenAI(
     // 使用 Chat Completions 流式接口进行最小请求
     const requestPayload: ChatCompletionCreateParamsStreaming = {
       model: requestModel,
-      messages: [{ role: "user", content: "hi" }],
+      messages: [
+        { role: "system", content: "" },
+        { role: "assistant", content: "" },
+        { role: "user", content: "hi" },
+      ],
       max_tokens: 1,
       temperature: 0,
       stream: true,
