@@ -9,6 +9,7 @@ import type { ChatCompletionCreateParamsStreaming } from "openai/resources/chat/
 
 import type { CheckResult, HealthStatus, ProviderConfig } from "../types";
 import { DEFAULT_ENDPOINTS } from "../types";
+import { getOrCreateClientCache, stableStringify } from "../utils";
 import { measureEndpointPing } from "./endpoint-ping";
 
 /**
@@ -24,21 +25,12 @@ const DEFAULT_TIMEOUT_MS = 15_000;
 const DEGRADED_THRESHOLD_MS = 6_000;
 
 /**
- * 扩展 globalThis 以在 dev 热更时复用 OpenAI 客户端
- */
-declare global {
-  var __CHECK_CX_OPENAI_CLIENTS__:
-    | Map<string, OpenAI>
-    | undefined;
-}
-
-/**
  * OpenAI 客户端全局缓存
  * key = baseURL + apiKey，用于复用连接和内部缓存
+ *
+ * 注意: 全局类型声明在 lib/utils/client-cache.ts 中统一定义
  */
-const openAIClientCache: Map<string, OpenAI> =
-  globalThis.__CHECK_CX_OPENAI_CLIENTS__ ??
-  (globalThis.__CHECK_CX_OPENAI_CLIENTS__ = new Map<string, OpenAI>());
+const openAIClientCache = getOrCreateClientCache<OpenAI>("__CHECK_CX_OPENAI_CLIENTS__");
 
 type ReasoningEffortValue = NonNullable<
   ChatCompletionCreateParamsStreaming["reasoning_effort"]
@@ -112,9 +104,7 @@ function deriveOpenAIBaseURL(endpoint: string | null | undefined): string {
 function getOpenAIClient(config: ProviderConfig): OpenAI {
   const baseURL = deriveOpenAIBaseURL(config.endpoint);
   // 缓存 key 必须包含 requestHeaders，否则不同 header 配置会共用同一个客户端
-  const headersKey = config.requestHeaders
-    ? JSON.stringify(config.requestHeaders)
-    : "";
+  const headersKey = stableStringify(config.requestHeaders);
   const cacheKey = `${baseURL}::${config.apiKey}::${headersKey}`;
 
   const cached = openAIClientCache.get(cacheKey);
@@ -168,9 +158,7 @@ function deriveResponsesBaseURL(endpoint: string): string {
 function getResponsesClient(config: ProviderConfig): OpenAI {
   const baseURL = deriveResponsesBaseURL(config.endpoint!);
   // 缓存 key 必须包含 requestHeaders
-  const headersKey = config.requestHeaders
-    ? JSON.stringify(config.requestHeaders)
-    : "";
+  const headersKey = stableStringify(config.requestHeaders);
   const cacheKey = `responses::${baseURL}::${config.apiKey}::${headersKey}`;
 
   const cached = openAIClientCache.get(cacheKey);

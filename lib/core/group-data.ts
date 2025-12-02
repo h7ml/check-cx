@@ -10,10 +10,7 @@ import { getPollingIntervalLabel, getPollingIntervalMs } from "./polling-config"
 import { ensureOfficialStatusPoller } from "./official-status-poller";
 import { buildProviderTimelines, loadSnapshotForScope } from "./health-snapshot-service";
 import type { ProviderTimeline, RefreshMode } from "../types";
-
-// 未分组标识常量
-const UNGROUPED_KEY = "__ungrouped__";
-const UNGROUPED_DISPLAY_NAME = "未分组";
+import { UNGROUPED_KEY, UNGROUPED_DISPLAY_NAME } from "../types";
 
 /**
  * 分组 Dashboard 数据结构

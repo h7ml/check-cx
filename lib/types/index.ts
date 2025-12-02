@@ -26,3 +26,6 @@ export type {
   PingCacheEntry,
   HistorySnapshot,
 } from "./dashboard";
+
+// 常量
+export { UNGROUPED_KEY, UNGROUPED_DISPLAY_NAME } from "./constants";

@@ -16,10 +16,7 @@ import type {
   DashboardData,
   RefreshMode,
 } from "../types";
-
-// 未分组标识常量
-const UNGROUPED_KEY = "__ungrouped__";
-const UNGROUPED_DISPLAY_NAME = "未分组";
+import { UNGROUPED_KEY, UNGROUPED_DISPLAY_NAME } from "../types";
 
 /**
  * 将 ProviderTimeline 列表按分组组织

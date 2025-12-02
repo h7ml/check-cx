@@ -10,7 +10,6 @@ import { checkAnthropic } from "./anthropic";
 
 // 最多尝试 3 次：初始一次 + 2 次重试
 const MAX_REQUEST_ABORT_RETRIES = 2;
-const FAILURE_CONFIRM_RETRIES = 1;
 const REQUEST_ABORTED_PATTERN = /request was aborted\.?/i;
 
 /**
@@ -102,46 +101,6 @@ export async function runProviderChecks(
   const results = await Promise.all(
     configs.map((config) => checkWithRetry(config))
   );
-
-  for (
-    let attempt = 0;
-    attempt < FAILURE_CONFIRM_RETRIES;
-    attempt += 1
-  ) {
-    const failedIndices = results.reduce<number[]>((acc, result, index) => {
-      if (result.status === "failed") {
-        acc.push(index);
-      }
-      return acc;
-    }, []);
-
-    if (failedIndices.length === 0) {
-      break;
-    }
-
-    console.warn(
-      `[check-cx] 发现 ${failedIndices.length} 个 Provider 检测失败，触发第 ${
-        attempt + 1
-      } 次重试确认`
-    );
-
-    const retryResults = await Promise.all(
-      failedIndices.map((index) => checkWithRetry(configs[index]))
-    );
-
-    let hasRemainingFailures = false;
-    retryResults.forEach((retryResult, offset) => {
-      const resultIndex = failedIndices[offset];
-      results[resultIndex] = retryResult;
-      if (retryResult.status === "failed") {
-        hasRemainingFailures = true;
-      }
-    });
-
-    if (!hasRemainingFailures) {
-      break;
-    }
-  }
 
   return results.sort((a, b) => a.name.localeCompare(b.name));
 }
