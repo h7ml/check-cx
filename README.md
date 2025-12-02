@@ -42,10 +42,11 @@ Check CX 是一套基于 **Next.js 16** + **shadcn/ui** 构建的现代化 AI �
 
 - 通过 Supabase 数据库管理所有检测配置
 - 支持 OpenAI、Gemini、Anthropic 及自定义端点
-- 配置修改即时生效,无需重启服务
+- 配置修改即时生效，无需重启服务
 - 支持批量启用/禁用检测任务
-- **支持配置分组管理**,按服务商或用途组织配置
-- **维护模式**,临时暂停检测而不删除配置
+- **支持配置分组管理**，按服务商或用途组织配置
+- **维护模式**，临时暂停检测而不删除配置
+- **自定义请求头和请求参数**，灵活适配各种 API 端点
 
 ### ⏱️ 可靠的健康检查
 
@@ -72,6 +73,7 @@ Check CX 是一套基于 **Next.js 16** + **shadcn/ui** 构建的现代化 AI �
 
 - API 密钥仅存储在服务端
 - 前端只接收聚合后的健康数据
+- **日志敏感信息自动脱敏**（API Key、Token 等）
 - 支持环境变量与 `.env.local` 管理
 - 提供完整的 SQL 迁移脚本
 
@@ -179,9 +181,10 @@ Check CX 使用 Supabase 的两张核心表:
 | `endpoint` | TEXT | API 端点 URL |
 | `api_key` | TEXT | API 密钥 |
 | `enabled` | BOOLEAN | 是否启用 |
-| `is_maintenance` | BOOLEAN | 维护模式,启用后暂停检测 |
-| `user_agent` | TEXT | 自定义 User-Agent(可选) |
-| `group_name` | TEXT | 分组名称(可选) |
+| `is_maintenance` | BOOLEAN | 维护模式，启用后暂停检测 |
+| `request_header` | JSONB | 自定义请求头（JSON 格式，可选） |
+| `metadata` | JSONB | 自定义请求参数（可选） |
+| `group_name` | TEXT | 分组名称（可选） |
 
 **`check_history` - 历史记录表**
 
@@ -371,19 +374,46 @@ SELECT name, type, model FROM check_configs WHERE is_maintenance = true;
 - 历史记录保留,恢复后继续累积
 - 适用于已知服务商维护、计划停机等场景
 
-### 自定义 User-Agent
+### 自定义请求头
 
-某些 API 端点可能对默认 User-Agent 有限制,可以通过 `user_agent` 字段自定义请求头。
+某些 API 端点可能对默认请求头有限制，可以通过 `request_header` 字段自定义多个请求头（JSON 格式）。
 
 ```sql
--- 设置自定义 User-Agent
+-- 设置自定义请求头（JSON 格式，支持多个头）
 UPDATE check_configs
-SET user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+SET request_header = '{"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)", "X-Custom-Header": "value"}'
 WHERE name = '主力 OpenAI';
 
--- 清除自定义 User-Agent(恢复使用默认值)
+-- 仅设置 User-Agent
 UPDATE check_configs
-SET user_agent = NULL
+SET request_header = '{"User-Agent": "claude-cli/1.0.111 (external, cli)"}'
+WHERE name = '主力 OpenAI';
+
+-- 清除自定义请求头（恢复使用默认值）
+UPDATE check_configs
+SET request_header = NULL
+WHERE name = '主力 OpenAI';
+```
+
+### 自定义请求参数
+
+通过 `metadata` 字段可以自定义 API 请求体参数（JSONB 格式），这些参数会合并到请求中。
+
+```sql
+-- 设置自定义请求参数
+UPDATE check_configs
+SET metadata = '{"temperature": 0.5, "max_tokens": 50}'
+WHERE name = '主力 OpenAI';
+
+-- 同时设置请求头和请求参数
+UPDATE check_configs
+SET request_header = '{"User-Agent": "custom-agent/1.0"}',
+    metadata = '{"temperature": 0.7}'
+WHERE name = '主力 OpenAI';
+
+-- 清除自定义参数
+UPDATE check_configs
+SET metadata = NULL
 WHERE name = '主力 OpenAI';
 ```
 
@@ -424,7 +454,11 @@ check-cx/
 │   │   ├── config-loader.ts    # 配置加载
 │   │   └── history.ts          # 历史记录管理
 │   ├── types/                   # TypeScript 类型定义
+│   │   └── constants.ts         # 全局常量
 │   ├── utils/                   # 工具函数
+│   │   ├── client-cache.ts      # 客户端缓存管理器
+│   │   ├── cache-key.ts         # 缓存键序列化
+│   │   └── error-handler.ts     # 错误处理与脱敏
 │   └── supabase/                # Supabase 客户端
 ├── supabase/
 │   └── migrations/              # 数据库迁移脚本
