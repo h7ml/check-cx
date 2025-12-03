@@ -386,7 +386,7 @@ WHERE name = '主力 OpenAI';
 
 -- 仅设置 User-Agent
 UPDATE check_configs
-SET request_header = '{"User-Agent": "claude-cli/1.0.111 (external, cli)"}'
+SET request_header = '{"User-Agent": "check-cx/1.0.0"}'
 WHERE name = '主力 OpenAI';
 
 -- 清除自定义请求头（恢复使用默认值）
