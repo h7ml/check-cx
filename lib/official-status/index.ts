@@ -3,9 +3,9 @@
  * 根据 Provider 类型调用对应的状态检查函数
  */
 
-import type { ProviderType, OfficialStatusResult } from "../types";
-import { checkOpenAIStatus } from "./openai";
-import { checkAnthropicStatus } from "./anthropic";
+import type {OfficialStatusResult, ProviderType} from "../types";
+import {checkOpenAIStatus} from "./openai";
+import {checkAnthropicStatus} from "./anthropic";
 
 /**
  * 检查指定 Provider 的官方服务状态

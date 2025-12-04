@@ -1,17 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { RefreshCcw, Activity, Zap, Radio } from "lucide-react";
+import {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {Activity, Radio, RefreshCcw, Zap} from "lucide-react";
 
-import { ProviderIcon } from "@/components/provider-icon";
-import { StatusTimeline } from "@/components/status-timeline";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import type { ProviderTimeline } from "@/lib/types";
-import type { GroupDashboardData } from "@/lib/core/group-data";
-import { PROVIDER_LABEL, STATUS_META, OFFICIAL_STATUS_META } from "@/lib/core/status";
-import { cn, formatLocalTime } from "@/lib/utils";
+import {ProviderIcon} from "@/components/provider-icon";
+import {StatusTimeline} from "@/components/status-timeline";
+import {Badge} from "@/components/ui/badge";
+import {HoverCard, HoverCardContent, HoverCardTrigger} from "@/components/ui/hover-card";
+import type {ProviderTimeline} from "@/lib/types";
+import type {GroupDashboardData} from "@/lib/core/group-data";
+import {OFFICIAL_STATUS_META, PROVIDER_LABEL, STATUS_META} from "@/lib/core/status";
+import {cn, formatLocalTime} from "@/lib/utils";
 
 interface GroupDashboardViewProps {
   groupName: string;

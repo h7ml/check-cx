@@ -3,7 +3,7 @@
  * 统一管理轮询器状态和缓存
  */
 
-import type { PingCacheEntry } from "../types";
+import type {PingCacheEntry} from "../types";
 
 /**
  * 扩展 globalThis 类型

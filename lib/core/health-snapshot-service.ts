@@ -3,17 +3,11 @@
  * - 统一管理历史读取、刷新和时间线装配
  */
 
-import type {
-  ProviderConfig,
-  ProviderTimeline,
-  HistorySnapshot,
-  RefreshMode,
-  CheckResult,
-} from "../types";
-import { historySnapshotStore } from "../database/history";
-import { runProviderChecks } from "../providers";
-import { getPingCacheEntry } from "./global-state";
-import { getOfficialStatus } from "./official-status-poller";
+import type {CheckResult, HistorySnapshot, ProviderConfig, ProviderTimeline, RefreshMode,} from "../types";
+import {historySnapshotStore} from "../database/history";
+import {runProviderChecks} from "../providers";
+import {getPingCacheEntry} from "./global-state";
+import {getOfficialStatus} from "./official-status-poller";
 
 export interface SnapshotScope {
   cacheKey: string;

@@ -2,10 +2,10 @@
  * 流式响应检查通用逻辑
  */
 
-import type { CheckResult, HealthStatus, ProviderConfig } from "../types";
-import { DEFAULT_ENDPOINTS } from "../types";
-import { extractMessage } from "../utils";
-import { measureEndpointPing } from "./endpoint-ping";
+import type {CheckResult, HealthStatus, ProviderConfig} from "../types";
+import {DEFAULT_ENDPOINTS} from "../types";
+import {extractMessage} from "../utils";
+import {measureEndpointPing} from "./endpoint-ping";
 
 /**
  * 默认超时时间 (毫秒)

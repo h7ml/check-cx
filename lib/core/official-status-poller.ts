@@ -3,10 +3,10 @@
  * 独立于 Provider 检查,按固定间隔检查各 Provider 的官方服务状态
  */
 
-import type { ProviderType, OfficialStatusResult } from "../types";
-import { checkAllOfficialStatuses } from "../official-status";
-import { getOfficialStatusIntervalMs } from "./polling-config";
-import { logError } from "../utils/error-handler";
+import type {OfficialStatusResult, ProviderType} from "../types";
+import {checkAllOfficialStatuses} from "../official-status";
+import {getOfficialStatusIntervalMs} from "./polling-config";
+import {logError} from "../utils/error-handler";
 
 declare global {
   // 缓存所有 Provider 的最新官方状态

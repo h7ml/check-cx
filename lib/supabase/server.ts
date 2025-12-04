@@ -1,5 +1,5 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import {createServerClient} from '@supabase/ssr'
+import {cookies} from 'next/headers'
 
 // 开发模式使用 dev schema，生产模式使用 public schema
 const DB_SCHEMA = process.env.NODE_ENV === 'development' ? 'dev' : 'public'

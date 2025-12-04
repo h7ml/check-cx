@@ -3,8 +3,8 @@
  * 状态 API: https://status.openai.com/proxy/status.openai.com
  */
 
-import type { OfficialStatusResult, OfficialHealthStatus } from "../types";
-import { logError } from "../utils/error-handler";
+import type {OfficialHealthStatus, OfficialStatusResult} from "../types";
+import {logError} from "../utils/error-handler";
 
 const OPENAI_STATUS_URL = "https://status.openai.com/proxy/status.openai.com";
 const TIMEOUT_MS = 15000; // 15 秒超时

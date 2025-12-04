@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import {useEffect} from "react";
 
 const DARK_START_HOUR = 19; // 19:00 起进入夜间
 const DARK_END_HOUR = 7; // 07:00 前保持夜间

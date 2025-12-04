@@ -1,9 +1,9 @@
-import { notFound } from "next/navigation";
+import {notFound} from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import {ChevronLeft} from "lucide-react";
 
-import { GroupDashboardView } from "@/components/group-dashboard-view";
-import { loadGroupDashboardData } from "@/lib/core/group-data";
+import {GroupDashboardView} from "@/components/group-dashboard-view";
+import {loadGroupDashboardData} from "@/lib/core/group-data";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;

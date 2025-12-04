@@ -1,19 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import Link from "next/link";
-import { ChevronDown, ExternalLink, RefreshCcw, Activity, Zap, Radio, Github } from "lucide-react";
+import {Activity, ChevronDown, ExternalLink, Github, Radio, RefreshCcw, Zap} from "lucide-react";
 
-import { ProviderIcon } from "@/components/provider-icon";
-import { StatusTimeline } from "@/components/status-timeline";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import type { DashboardData, ProviderTimeline, GroupedProviderTimelines } from "@/lib/types";
-import { PROVIDER_LABEL, STATUS_META, OFFICIAL_STATUS_META } from "@/lib/core/status";
-import { cn, formatLocalTime } from "@/lib/utils";
+import {ProviderIcon} from "@/components/provider-icon";
+import {StatusTimeline} from "@/components/status-timeline";
+import {ThemeToggle} from "@/components/theme-toggle";
+import {Badge} from "@/components/ui/badge";
+import {HoverCard, HoverCardContent, HoverCardTrigger} from "@/components/ui/hover-card";
+import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
+import type {DashboardData, GroupedProviderTimelines, ProviderTimeline} from "@/lib/types";
+import {OFFICIAL_STATUS_META, PROVIDER_LABEL, STATUS_META} from "@/lib/core/status";
+import {cn, formatLocalTime} from "@/lib/utils";
 
 interface DashboardViewProps {
   /** 首屏由服务端注入的聚合数据，用作前端轮询的初始快照 */

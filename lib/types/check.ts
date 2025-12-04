@@ -2,8 +2,8 @@
  * 健康检查相关类型定义
  */
 
-import type { ProviderType } from "./provider";
-import type { OfficialStatusResult } from "./official-status";
+import type {ProviderType} from "./provider";
+import type {OfficialStatusResult} from "./official-status";
 
 /**
  * Provider 健康状态

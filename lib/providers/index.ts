@@ -2,11 +2,11 @@
  * Provider 检查统一入口
  */
 
-import type { CheckResult, ProviderConfig } from "../types";
-import { logError, getErrorMessage } from "../utils";
-import { checkOpenAI } from "./openai";
-import { checkGemini } from "./gemini";
-import { checkAnthropic } from "./anthropic";
+import type {CheckResult, ProviderConfig} from "../types";
+import {getErrorMessage, logError} from "../utils";
+import {checkOpenAI} from "./openai";
+import {checkGemini} from "./gemini";
+import {checkAnthropic} from "./anthropic";
 
 // 最多尝试 3 次：初始一次 + 2 次重试
 const MAX_REQUEST_ABORT_RETRIES = 2;

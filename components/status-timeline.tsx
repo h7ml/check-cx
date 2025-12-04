@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Clock } from "lucide-react";
-
-import { ProviderIcon } from "@/components/provider-icon";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { Badge } from "@/components/ui/badge";
-import { PROVIDER_LABEL, STATUS_META } from "@/lib/core/status";
-import type { TimelineItem } from "@/lib/types";
-import { cn, formatLocalTime } from "@/lib/utils";
+import {useEffect, useState} from "react";
+import {Clock} from "lucide-react";
+import {HoverCard, HoverCardContent, HoverCardTrigger} from "@/components/ui/hover-card";
+import {Badge} from "@/components/ui/badge";
+import {STATUS_META} from "@/lib/core/status";
+import type {TimelineItem} from "@/lib/types";
+import {cn, formatLocalTime} from "@/lib/utils";
 
 interface StatusTimelineProps {
   /** 时间线条目列表，通常为最近 60 条按时间倒序的检测结果 */

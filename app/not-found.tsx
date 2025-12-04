@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft, SearchX } from "lucide-react";
+import {ChevronLeft, SearchX} from "lucide-react";
 
 export default function NotFound() {
   return (

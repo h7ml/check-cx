@@ -2,14 +2,12 @@
  * Anthropic Provider 健康检查（使用官方 @anthropic-ai/sdk）
  */
 
-import Anthropic, {
-  APIUserAbortError as AnthropicAPIUserAbortError,
-} from "@anthropic-ai/sdk";
+import Anthropic, {APIUserAbortError as AnthropicAPIUserAbortError,} from "@anthropic-ai/sdk";
 
-import type { CheckResult, HealthStatus, ProviderConfig } from "../types";
-import { DEFAULT_ENDPOINTS } from "../types";
-import { getOrCreateClientCache, stableStringify } from "../utils";
-import { measureEndpointPing } from "./endpoint-ping";
+import type {CheckResult, HealthStatus, ProviderConfig} from "../types";
+import {DEFAULT_ENDPOINTS} from "../types";
+import {getOrCreateClientCache, stableStringify} from "../utils";
+import {measureEndpointPing} from "./endpoint-ping";
 
 /**
  * 默认超时时间 (毫秒)

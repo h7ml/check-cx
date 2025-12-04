@@ -3,9 +3,9 @@
  */
 
 import "server-only";
-import { createClient } from "../supabase/server";
-import type { CheckConfigRow, ProviderConfig, ProviderType } from "../types";
-import { logError } from "../utils";
+import {createClient} from "../supabase/server";
+import type {CheckConfigRow, ProviderConfig, ProviderType} from "../types";
+import {logError} from "../utils";
 
 /**
  * 从数据库加载启用的 Provider 配置

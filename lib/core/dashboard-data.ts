@@ -6,17 +6,12 @@
  * - 在必要时触发一次新的 Provider 检测并写入历史
  * - 结合轮询配置与官方状态，生成 DashboardView 所需的完整数据结构
  */
-import { loadProviderConfigsFromDB } from "../database/config-loader";
-import { getPollingIntervalLabel, getPollingIntervalMs } from "./polling-config";
-import { ensureOfficialStatusPoller } from "./official-status-poller";
-import { buildProviderTimelines, loadSnapshotForScope } from "./health-snapshot-service";
-import type {
-  ProviderTimeline,
-  GroupedProviderTimelines,
-  DashboardData,
-  RefreshMode,
-} from "../types";
-import { UNGROUPED_KEY, UNGROUPED_DISPLAY_NAME } from "../types";
+import {loadProviderConfigsFromDB} from "../database/config-loader";
+import {getPollingIntervalLabel, getPollingIntervalMs} from "./polling-config";
+import {ensureOfficialStatusPoller} from "./official-status-poller";
+import {buildProviderTimelines, loadSnapshotForScope} from "./health-snapshot-service";
+import type {DashboardData, GroupedProviderTimelines, ProviderTimeline, RefreshMode,} from "../types";
+import {UNGROUPED_DISPLAY_NAME, UNGROUPED_KEY} from "../types";
 
 /**
  * 将 ProviderTimeline 列表按分组组织

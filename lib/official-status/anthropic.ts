@@ -3,8 +3,8 @@
  * 状态 API: https://status.claude.com/api/v2/summary.json
  */
 
-import type { OfficialStatusResult, OfficialHealthStatus } from "../types";
-import { logError } from "../utils/error-handler";
+import type {OfficialHealthStatus, OfficialStatusResult} from "../types";
+import {logError} from "../utils/error-handler";
 
 const ANTHROPIC_STATUS_URL = "https://status.claude.com/api/v2/summary.json";
 const TIMEOUT_MS = 15000; // 15 秒超时

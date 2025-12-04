@@ -3,18 +3,13 @@
  * 在应用启动时自动初始化并持续运行
  */
 
-import { historySnapshotStore } from "../database/history";
-import { loadProviderConfigsFromDB } from "../database/config-loader";
-import { runProviderChecks } from "../providers";
-import { getPollingIntervalMs } from "./polling-config";
-import {
-  getPollerTimer,
-  setPollerTimer,
-  getLastPingStartedAt,
-  setLastPingStartedAt,
-} from "./global-state";
-import { startOfficialStatusPoller } from "./official-status-poller";
-import type { HealthStatus } from "../types";
+import {historySnapshotStore} from "../database/history";
+import {loadProviderConfigsFromDB} from "../database/config-loader";
+import {runProviderChecks} from "../providers";
+import {getPollingIntervalMs} from "./polling-config";
+import {getLastPingStartedAt, getPollerTimer, setLastPingStartedAt, setPollerTimer,} from "./global-state";
+import {startOfficialStatusPoller} from "./official-status-poller";
+import type {HealthStatus} from "../types";
 
 const POLL_INTERVAL_MS = getPollingIntervalMs();
 

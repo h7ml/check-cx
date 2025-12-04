@@ -4,13 +4,13 @@
  * - /responses 端点使用 Responses API
  */
 
-import OpenAI, { APIUserAbortError } from "openai";
-import type { ChatCompletionCreateParamsStreaming } from "openai/resources/chat/completions";
+import OpenAI, {APIUserAbortError} from "openai";
+import type {ChatCompletionCreateParamsStreaming} from "openai/resources/chat/completions";
 
-import type { CheckResult, HealthStatus, ProviderConfig } from "../types";
-import { DEFAULT_ENDPOINTS } from "../types";
-import { getOrCreateClientCache, stableStringify } from "../utils";
-import { measureEndpointPing } from "./endpoint-ping";
+import type {CheckResult, HealthStatus, ProviderConfig} from "../types";
+import {DEFAULT_ENDPOINTS} from "../types";
+import {getOrCreateClientCache, stableStringify} from "../utils";
+import {measureEndpointPing} from "./endpoint-ping";
 
 /**
  * 默认超时时间 (毫秒)

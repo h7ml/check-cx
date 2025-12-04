@@ -1,4 +1,4 @@
-import { createBrowserClient } from '@supabase/ssr'
+import {createBrowserClient} from '@supabase/ssr'
 
 // 开发模式使用 dev schema，生产模式使用 public schema
 const DB_SCHEMA = process.env.NODE_ENV === 'development' ? 'dev' : 'public'

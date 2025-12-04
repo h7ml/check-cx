@@ -3,10 +3,10 @@
  */
 
 import "server-only";
-import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
-import { createClient } from "../supabase/server";
-import type { CheckResult, HistorySnapshot } from "../types";
-import { logError } from "../utils";
+import type {PostgrestError, SupabaseClient} from "@supabase/supabase-js";
+import {createClient} from "../supabase/server";
+import type {CheckResult, HistorySnapshot} from "../types";
+import {logError} from "../utils";
 
 /**
  * 每个 Provider 最多保留的历史记录数

@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { loadGroupDashboardData } from "@/lib/core/group-data";
+import {NextResponse} from "next/server";
+import {loadGroupDashboardData} from "@/lib/core/group-data";
 
 interface RouteContext {
   params: Promise<{ groupName: string }>;

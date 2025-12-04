@@ -1,5 +1,5 @@
-import { DashboardView } from "@/components/dashboard-view";
-import { loadDashboardData } from "@/lib/core/dashboard-data";
+import {DashboardView} from "@/components/dashboard-view";
+import {loadDashboardData} from "@/lib/core/dashboard-data";
 import packageJson from "@/package.json";
 
 export const dynamic = "force-dynamic";

@@ -1,4 +1,4 @@
-import type { HealthStatus, ProviderType, OfficialHealthStatus } from "../types";
+import type {HealthStatus, OfficialHealthStatus, ProviderType} from "../types";
 
 export const STATUS_META: Record<
   HealthStatus,

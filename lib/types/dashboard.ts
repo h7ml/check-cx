@@ -2,7 +2,7 @@
  * Dashboard 数据相关类型定义
  */
 
-import type { CheckResult } from "./check";
+import type {CheckResult} from "./check";
 
 /**
  * 时间线项目（保持原始 ISO 时间，交给客户端格式化）
