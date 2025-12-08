@@ -278,14 +278,15 @@ async function checkOpenAIResponses(
     }
 
     // 流结束后验证答案
-    const validated = validateResponse(collectedResponse, challenge.expectedAnswer);
+    const validationResult = validateResponse(collectedResponse, challenge.expectedAnswer);
 
     // 打印对话日志
-    console.log(`[OpenAI Responses] ${config.groupName || "默认"} | ${config.name} | Q: ${challenge.prompt} | A: ${collectedResponse} | 期望: ${challenge.expectedAnswer} | 验证: ${validated ? "通过" : "失败"}`);
+    console.log(`[OpenAI Responses] ${config.groupName || "默认"} | ${config.name} | Q: ${challenge.prompt} | A: ${collectedResponse} | 期望: ${challenge.expectedAnswer} | 验证: ${validationResult.valid ? "通过" : "失败"}`);
 
     // 验证回复是否包含正确答案
-    if (!validated) {
+    if (!validationResult.valid) {
       const pingLatencyMs = await pingPromise;
+      const extractedAnswer = validationResult.extractedNumbers?.join(", ") || "(无数字)";
       return {
         id: config.id,
         name: config.name,
@@ -296,7 +297,7 @@ async function checkOpenAIResponses(
         latencyMs,
         pingLatencyMs,
         checkedAt: new Date().toISOString(),
-        message: `回复验证失败: 期望 ${challenge.expectedAnswer}, 实际回复: ${collectedResponse.slice(0, 100)}`,
+        message: `回复验证失败: 期望 ${challenge.expectedAnswer}, 实际: ${extractedAnswer}`,
       };
     }
 
@@ -422,14 +423,15 @@ export async function checkOpenAI(
     }
 
     // 流结束后验证答案
-    const validated = validateResponse(collectedResponse, challenge.expectedAnswer);
+    const validationResult = validateResponse(collectedResponse, challenge.expectedAnswer);
 
     // 打印对话日志
-    console.log(`[OpenAI] ${config.groupName || "默认"} | ${config.name} | Q: ${challenge.prompt} | A: ${collectedResponse} | 期望: ${challenge.expectedAnswer} | 验证: ${validated ? "通过" : "失败"}`);
+    console.log(`[OpenAI] ${config.groupName || "默认"} | ${config.name} | Q: ${challenge.prompt} | A: ${collectedResponse} | 期望: ${challenge.expectedAnswer} | 验证: ${validationResult.valid ? "通过" : "失败"}`);
 
     // 验证回复是否包含正确答案
-    if (!validated) {
+    if (!validationResult.valid) {
       const pingLatencyMs = await pingPromise;
+      const extractedAnswer = validationResult.extractedNumbers?.join(", ") || "(无数字)";
       return {
         id: config.id,
         name: config.name,
@@ -440,7 +442,7 @@ export async function checkOpenAI(
         latencyMs,
         pingLatencyMs,
         checkedAt: new Date().toISOString(),
-        message: `回复验证失败: 期望 ${challenge.expectedAnswer}, 实际回复: ${collectedResponse.slice(0, 100)}`,
+        message: `回复验证失败: 期望 ${challenge.expectedAnswer}, 实际: ${extractedAnswer}`,
       };
     }
 

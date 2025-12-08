@@ -43,27 +43,36 @@ export function generateChallenge(): Challenge {
   }
 }
 
+/** 验证结果 */
+export interface ValidationResult {
+  /** 是否验证通过 */
+  valid: boolean;
+  /** 从回复中提取到的数字(用于显示) */
+  extractedNumbers: string[] | null;
+}
+
 /**
  * 验证模型回复是否包含正确答案
  *
  * @param response 模型的回复内容
  * @param expectedAnswer 期望的答案
- * @returns 是否验证通过
+ * @returns 验证结果,包含是否通过和提取到的数字
  */
 export function validateResponse(
   response: string,
   expectedAnswer: string
-): boolean {
+): ValidationResult {
   if (!response || !expectedAnswer) {
-    return false;
+    return { valid: false, extractedNumbers: null };
   }
 
   // 从回复中提取所有数字
   const numbers = response.match(/-?\d+/g);
   if (!numbers) {
-    return false;
+    return { valid: false, extractedNumbers: null };
   }
 
   // 检查是否包含正确答案
-  return numbers.includes(expectedAnswer);
+  const valid = numbers.includes(expectedAnswer);
+  return { valid, extractedNumbers: numbers };
 }
