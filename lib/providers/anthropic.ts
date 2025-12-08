@@ -143,16 +143,12 @@ export async function checkAnthropic(
       }
     }
 
-    // 流结束后验证答案
-    const validated = validateResponse(collectedResponse, challenge.expectedAnswer);
-
-    // 打印对话日志
-    console.log(`[Anthropic] ${config.groupName || "默认"} | ${config.name} | Q: ${challenge.prompt} | A: ${collectedResponse} | 期望: ${challenge.expectedAnswer} | 验证: ${validated ? "通过" : "失败"}`);
-
     const latencyMs = Date.now() - startedAt;
 
-    if (!validated) {
+    // 先检查回复是否为空
+    if (!collectedResponse || collectedResponse.trim() === "") {
       const pingLatencyMs = await pingPromise;
+      console.log(`[Anthropic] ${config.groupName || "默认"} | ${config.name} | Q: ${challenge.prompt} | A: (空) | 期望: ${challenge.expectedAnswer} | 验证: 失败(空回复)`);
       return {
         id: config.id,
         name: config.name,
@@ -163,7 +159,29 @@ export async function checkAnthropic(
         latencyMs,
         pingLatencyMs,
         checkedAt: new Date().toISOString(),
-        message: `回复验证失败: 期望 ${challenge.expectedAnswer}, 实际回复: ${collectedResponse.slice(0, 100) || "(空)"}`,
+        message: "回复为空",
+      };
+    }
+
+    // 流结束后验证答案
+    const validated = validateResponse(collectedResponse, challenge.expectedAnswer);
+
+    // 打印对话日志
+    console.log(`[Anthropic] ${config.groupName || "默认"} | ${config.name} | Q: ${challenge.prompt} | A: ${collectedResponse} | 期望: ${challenge.expectedAnswer} | 验证: ${validated ? "通过" : "失败"}`);
+
+    if (!validated) {
+      const pingLatencyMs = await pingPromise;
+      return {
+        id: config.id,
+        name: config.name,
+        type: config.type,
+        endpoint: displayEndpoint,
+        model: config.model,
+        status: "validation_failed",
+        latencyMs,
+        pingLatencyMs,
+        checkedAt: new Date().toISOString(),
+        message: `回复验证失败: 期望 ${challenge.expectedAnswer}, 实际回复: ${collectedResponse.slice(0, 100)}`,
       };
     }
 

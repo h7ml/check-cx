@@ -27,6 +27,12 @@ export const STATUS_META: Record<
     badge: "danger",
     dot: "bg-rose-500",
   },
+  validation_failed: {
+    label: "验证失败",
+    description: "请求成功但回答未通过验证",
+    badge: "warning",
+    dot: "bg-orange-500",
+  },
   maintenance: {
     label: "维护中",
     description: "人工维护,已停止检查",

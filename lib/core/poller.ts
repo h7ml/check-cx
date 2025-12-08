@@ -83,6 +83,7 @@ async function tick() {
       operational: 0,
       degraded: 0,
       failed: 0,
+      validation_failed: 0,
       maintenance: 0,
     };
     results.forEach((result) => {
