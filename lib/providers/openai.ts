@@ -245,9 +245,8 @@ async function checkOpenAIResponses(
       signal: controller.signal,
     });
 
-    // 收集回复直到能验证答案
+    // 收集完整回复，等待流结束
     let collectedResponse = "";
-    let validated = false;
     for await (const event of stream as AsyncIterable<{
       type?: string;
       delta?: string;
@@ -255,13 +254,14 @@ async function checkOpenAIResponses(
       // Responses API 的文本增量事件
       if (event.type === "response.output_text.delta" && event.delta) {
         collectedResponse += event.delta;
-        // 一旦验证通过立即跳出
-        if (validateResponse(collectedResponse, challenge.expectedAnswer)) {
-          validated = true;
-          break;
-        }
       }
     }
+
+    // 流结束后验证答案
+    const validated = validateResponse(collectedResponse, challenge.expectedAnswer);
+
+    // 打印对话日志
+    console.log(`[OpenAI Responses] ${config.groupName || "默认"} | ${config.name} | Q: ${challenge.prompt} | A: ${collectedResponse} | 期望: ${challenge.expectedAnswer} | 验证: ${validated ? "通过" : "失败"}`);
 
     const latencyMs = Date.now() - startedAt;
 
@@ -374,20 +374,20 @@ export async function checkOpenAI(
       signal: controller.signal,
     });
 
-    // 收集回复直到能验证答案
+    // 收集完整回复，等待流结束
     let collectedResponse = "";
-    let validated = false;
     for await (const chunk of stream) {
       const content = chunk.choices[0]?.delta?.content;
       if (content) {
         collectedResponse += content;
-        // 一旦验证通过立即跳出
-        if (validateResponse(collectedResponse, challenge.expectedAnswer)) {
-          validated = true;
-          break;
-        }
       }
     }
+
+    // 流结束后验证答案
+    const validated = validateResponse(collectedResponse, challenge.expectedAnswer);
+
+    // 打印对话日志
+    console.log(`[OpenAI] ${config.groupName || "默认"} | ${config.name} | Q: ${challenge.prompt} | A: ${collectedResponse} | 期望: ${challenge.expectedAnswer} | 验证: ${validated ? "通过" : "失败"}`);
 
     const latencyMs = Date.now() - startedAt;
 

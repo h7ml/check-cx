@@ -132,26 +132,25 @@ export async function checkAnthropic(
       { signal: controller.signal }
     );
 
-    // 收集回复直到能验证答案
+    // 收集完整回复，等待流结束
     let collectedResponse = "";
-    let validated = false;
     for await (const event of stream) {
       if (
         event.type === "content_block_delta" &&
         event.delta.type === "text_delta"
       ) {
         collectedResponse += event.delta.text;
-        // 一旦验证通过立即跳出
-        if (validateResponse(collectedResponse, challenge.expectedAnswer)) {
-          validated = true;
-          break;
-        }
       }
     }
 
+    // 流结束后验证答案
+    const validated = validateResponse(collectedResponse, challenge.expectedAnswer);
+
+    // 打印对话日志
+    console.log(`[Anthropic] ${config.groupName || "默认"} | ${config.name} | Q: ${challenge.prompt} | A: ${collectedResponse} | 期望: ${challenge.expectedAnswer} | 验证: ${validated ? "通过" : "失败"}`);
+
     const latencyMs = Date.now() - startedAt;
 
-    // 验证回复是否包含正确答案
     if (!validated) {
       const pingLatencyMs = await pingPromise;
       return {
