@@ -295,6 +295,12 @@ VALUES (
 );
 ```
 
+**注意：OpenAI 端点必须是完整路径，且后缀决定使用的 API 类型**
+- `/v1/chat/completions` → Chat Completions
+- `/v1/responses` → Responses
+
+不要只填 `https://api.openai.com/v1` 这种 baseURL；否则会被当作 Chat Completions 处理。
+
 #### Gemini
 
 ```sql

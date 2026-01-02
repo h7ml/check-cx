@@ -238,7 +238,7 @@ function createCustomFetch(
  * @throws 当 Provider 类型不支持时抛出错误
  */
 function createModel(config: ProviderConfig) {
-  const endpoint = config.endpoint || DEFAULT_ENDPOINTS[config.type];
+  const endpoint = config.endpoint?.trim() || DEFAULT_ENDPOINTS[config.type];
   const baseURL = deriveBaseURL(endpoint);
   const { modelId, reasoningEffort } = parseModelDirective(config.model);
 
@@ -253,10 +253,10 @@ function createModel(config: ProviderConfig) {
     case "openai": {
       const provider = createOpenAI({ apiKey: config.apiKey, baseURL, fetch: customFetch });
 
-      // Responses API 使用 provider.responses()，Chat Completions 使用 provider()
-      const isResponses = isResponsesEndpoint(config.endpoint);
+      // Responses API 使用 provider.responses()，Chat Completions 使用 provider.chat()
+      const isResponses = isResponsesEndpoint(endpoint);
       return {
-        model: isResponses ? provider.responses(modelId) : provider(modelId),
+        model: isResponses ? provider.responses(modelId) : provider.chat(modelId),
         reasoningEffort,
         isResponses,
       };
