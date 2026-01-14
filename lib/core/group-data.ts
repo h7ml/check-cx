@@ -21,6 +21,7 @@ import {UNGROUPED_DISPLAY_NAME, UNGROUPED_KEY} from "../types";
 export interface GroupDashboardData {
   groupName: string;
   displayName: string;
+  tags: string;
   providerTimelines: ProviderTimeline[];
   lastUpdated: string | null;
   total: number;
@@ -127,14 +128,17 @@ export async function loadGroupDashboardData(
 
   // 获取分组信息（仅对有名分组）
   let websiteUrl: string | undefined | null;
+  let tags = "";
   if (!isTargetUngrouped) {
     const groupInfo = await getGroupInfo(targetGroupName);
     websiteUrl = groupInfo?.website_url;
+    tags = groupInfo?.tags ?? "";
   }
 
   return {
     groupName: targetGroupName,
     displayName: isTargetUngrouped ? UNGROUPED_DISPLAY_NAME : targetGroupName,
+    tags,
     providerTimelines,
     lastUpdated,
     total: providerTimelines.length,

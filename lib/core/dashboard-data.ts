@@ -52,6 +52,7 @@ function groupTimelines(timelines: ProviderTimeline[], groupInfos: GroupInfoRow[
       groupName,
       displayName: groupName,
       websiteUrl: info?.website_url,
+      tags: info?.tags ?? "",
       timelines: groupTimelines.sort((a, b) =>
         a.latest.name.localeCompare(b.latest.name)
       ),
@@ -64,6 +65,7 @@ function groupTimelines(timelines: ProviderTimeline[], groupInfos: GroupInfoRow[
     groups.push({
       groupName: UNGROUPED_KEY,
       displayName: UNGROUPED_DISPLAY_NAME,
+      tags: "",
       timelines: ungrouped.sort((a, b) =>
         a.latest.name.localeCompare(b.latest.name)
       ),

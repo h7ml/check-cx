@@ -3,6 +3,7 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {Activity, ExternalLink, RefreshCcw} from "lucide-react";
 
+import {GroupTags} from "@/components/group-tags";
 import {ProviderCard} from "@/components/provider-card";
 import {ClientTime} from "@/components/client-time";
 import type {AvailabilityPeriod, ProviderTimeline} from "@/lib/types";
@@ -225,6 +226,7 @@ export function GroupDashboardView({ groupName, initialData }: GroupDashboardVie
               </a>
             )}
           </div>
+          <GroupTags tags={data.tags} className="mt-2" />
           
            <div className="flex flex-wrap items-center gap-2.5">
             {statusSummary.operational > 0 && (

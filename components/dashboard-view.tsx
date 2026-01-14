@@ -33,6 +33,7 @@ import {
 } from "@dnd-kit/sortable";
 import {CSS} from "@dnd-kit/utilities";
 
+import {GroupTags} from "@/components/group-tags";
 import {ProviderCard} from "@/components/provider-card";
 import {ThemeToggle} from "@/components/theme-toggle";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
@@ -195,6 +196,7 @@ function GroupPanel({
                 </a>
               )}
             </div>
+            <GroupTags tags={group.tags} className="mt-2" />
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
                {statusSummary.operational > 0 && (
                  <span className="flex items-center gap-1.5 whitespace-nowrap">
