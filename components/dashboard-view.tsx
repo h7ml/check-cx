@@ -1,6 +1,7 @@
 "use client";
 
-import {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {useCallback, useEffect, useMemo, useState} from "react";
+import {fetchWithCache, setCache} from "@/lib/core/frontend-cache";
 import Link from "next/link";
 import {
   Activity,
@@ -267,7 +268,6 @@ export function DashboardView({ initialData }: DashboardViewProps) {
   const [data, setData] = useState(initialData);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const lockRef = useRef(false);
   const [timeToNextRefresh, setTimeToNextRefresh] = useState<number | null>(() =>
     computeRemainingMs(
       initialData.pollIntervalMs,
@@ -370,32 +370,32 @@ export function DashboardView({ initialData }: DashboardViewProps) {
     }
   }, []);
 
-  const refresh = useCallback(async (period?: AvailabilityPeriod) => {
-    if (lockRef.current) {
-      return;
-    }
-    lockRef.current = true;
+  const refresh = useCallback(async (period?: AvailabilityPeriod, forceFresh?: boolean) => {
     setIsRefreshing(true);
     try {
       const targetPeriod = period ?? selectedPeriod;
-      const response = await fetch(`/api/dashboard?trendPeriod=${targetPeriod}`, {
-        cache: "no-store",
+      const result = await fetchWithCache({
+        trendPeriod: targetPeriod,
+        forceFresh,
+        onBackgroundUpdate: (newData) => {
+          // SWR 模式：后台刷新完成后更新 UI
+          setData(newData);
+        },
       });
-      if (!response.ok) {
-        throw new Error("刷新数据失败");
-      }
-      const next = (await response.json()) as DashboardData;
-      setData(next);
+      setData(result.data);
     } catch (error) {
-      console.error("[check-cx] 自动刷新失败", error);
+      console.error("[check-cx] 刷新失败", error);
     } finally {
       setIsRefreshing(false);
-      lockRef.current = false;
     }
   }, [selectedPeriod]);
 
   useEffect(() => {
     setData(initialData);
+    // 将服务端数据放入前端缓存
+    if (initialData.trendPeriod) {
+      setCache(initialData.trendPeriod, initialData);
+    }
   }, [initialData]);
 
   useEffect(() => {
