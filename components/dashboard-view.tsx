@@ -12,6 +12,7 @@ import {
   GripVertical,
   RefreshCcw,
   Search,
+  Settings,
   X,
 } from "lucide-react";
 import {
@@ -782,6 +783,14 @@ export function DashboardView({ initialData }: DashboardViewProps) {
             </Link>
             <div className="h-3 w-[1px] bg-border/60 sm:h-4" />
             <ThemeToggle />
+            <div className="h-3 w-[1px] bg-border/60 sm:h-4" />
+            <Link
+              href="/admin"
+              className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground sm:text-xs"
+            >
+              <Settings className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <span>Admin</span>
+            </Link>
           </div>
           
           <h1 className="max-w-2xl text-3xl font-extrabold leading-tight tracking-tight sm:text-5xl md:text-6xl">

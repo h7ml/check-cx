@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Pencil, Trash2, Plus, Zap } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { CrudDialog } from "@/components/admin/crud-dialog";
+import { Pagination } from "@/components/admin/pagination";
 
 type ConditionType = "status_change" | "consecutive_failures" | "latency_threshold";
 
@@ -66,6 +67,8 @@ function toggle(arr: string[], id: string): string[] {
 
 export default function RulesPage() {
   const [rules, setRules] = useState<RuleRow[]>([]);
+  const [page, setPage]       = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [channels, setChannels] = useState<ChannelOption[]>([]);
   const [configs, setConfigs] = useState<ConfigOption[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -166,7 +169,7 @@ export default function RulesPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {rules.map((row) => (
+            {rules.slice((page - 1) * pageSize, page * pageSize).map((row) => (
               <tr key={row.id} className="group hover:bg-muted/30 transition-colors">
                 <td className="px-3 py-2 font-medium">{row.name}</td>
                 <td className="px-3 py-2">
@@ -202,6 +205,14 @@ export default function RulesPage() {
           </div>
         )}
       </div>
+
+      <Pagination
+        page={page}
+        pageSize={pageSize}
+        total={rules.length}
+        onPageChange={setPage}
+        onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+      />
 
       <CrudDialog open={dialogOpen} onOpenChange={setDialogOpen} title={editRow ? "编辑规则" : "新建规则"} onSubmit={handleSubmit} loading={loading}>
         <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">

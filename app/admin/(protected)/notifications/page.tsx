@@ -5,20 +5,34 @@ import { Pencil, Trash2, Plus, Bell } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { CrudDialog } from "@/components/admin/crud-dialog";
 import { NotificationForm, NotificationFormData, defaultNotificationForm } from "@/components/admin/notification-form";
+import { Pagination } from "@/components/admin/pagination";
 
 interface NotifRow {
   id: string;
   message: string;
   level: string;
+  scope: string;
   start_time: string | null;
   end_time: string | null;
   created_at: string;
 }
 
+const LEVEL_LABELS: Record<string, string> = {
+  info: "信息",
+  warning: "警告",
+  error: "错误",
+};
+
 const LEVEL_COLORS: Record<string, string> = {
   info: "bg-blue-500/10 text-blue-600",
   warning: "bg-yellow-500/10 text-yellow-600",
   error: "bg-red-500/10 text-red-600",
+};
+
+const SCOPE_LABELS: Record<string, string> = {
+  public: "前台",
+  admin: "后台",
+  both: "前后台",
 };
 
 function isActive(row: NotifRow): boolean {
@@ -30,6 +44,8 @@ function isActive(row: NotifRow): boolean {
 
 export default function NotificationsPage() {
   const [notifs, setNotifs] = useState<NotifRow[]>([]);
+  const [page, setPage]       = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editRow, setEditRow] = useState<NotifRow | null>(null);
@@ -53,7 +69,7 @@ export default function NotificationsPage() {
   function openEdit(row: NotifRow) {
     setEditRow(row);
     const toLocal = (iso: string | null) => iso ? new Date(iso).toISOString().slice(0, 16) : "";
-    setForm({ message: row.message, level: row.level, start_time: toLocal(row.start_time), end_time: toLocal(row.end_time) });
+    setForm({ message: row.message, level: row.level, scope: row.scope ?? "public", start_time: toLocal(row.start_time), end_time: toLocal(row.end_time) });
     setDialogOpen(true);
   }
 
@@ -104,13 +120,14 @@ export default function NotificationsPage() {
             <tr>
               <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground">消息摘要</th>
               <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground">级别</th>
+              <th className="hidden sm:table-cell px-3 py-2.5 text-left text-xs font-medium text-muted-foreground">范围</th>
               <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground">激活中</th>
               <th className="hidden sm:table-cell px-3 py-2.5 text-left text-xs font-medium text-muted-foreground">创建时间</th>
               <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {notifs.map((row) => {
+            {notifs.slice((page - 1) * pageSize, page * pageSize).map((row) => {
               const active = isActive(row);
               return (
                 <tr key={row.id} className="group hover:bg-muted/30 transition-colors">
@@ -119,8 +136,11 @@ export default function NotificationsPage() {
                   </td>
                   <td className="px-3 py-2">
                     <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${LEVEL_COLORS[row.level] ?? ""}`}>
-                      {row.level}
+                      {LEVEL_LABELS[row.level] ?? row.level}
                     </span>
+                  </td>
+                  <td className="hidden sm:table-cell px-3 py-2 text-xs text-muted-foreground">
+                    {SCOPE_LABELS[row.scope] ?? row.scope}
                   </td>
                   <td className="px-3 py-2">
                     <Switch checked={active} onCheckedChange={(v) => toggleExpiry(row, v)} />
@@ -152,6 +172,14 @@ export default function NotificationsPage() {
           </div>
         )}
       </div>
+
+      <Pagination
+        page={page}
+        pageSize={pageSize}
+        total={notifs.length}
+        onPageChange={setPage}
+        onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+      />
 
       <CrudDialog open={dialogOpen} onOpenChange={setDialogOpen} title={editRow ? "编辑通知" : "新建通知"} onSubmit={handleSubmit} loading={loading}>
         <NotificationForm data={form} onChange={setForm} />

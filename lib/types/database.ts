@@ -51,7 +51,10 @@ export interface AvailabilityStats {
 export interface GroupInfoRow {
   id: string;
   group_name: string;
+  display_name?: string | null;
+  description?: string | null;
   website_url?: string | null;
+  icon_url?: string | null;
   tags?: string | null;
   created_at?: string;
   updated_at?: string;
@@ -65,7 +68,18 @@ export interface SystemNotificationRow {
   message: string;
   is_active: boolean;
   level: "info" | "warning" | "error";
+  scope: "public" | "admin" | "both";
+  start_time?: string | null;
+  end_time?: string | null;
   created_at: string;
+}
+
+export interface SiteSettingRow {
+  key: string;
+  value: string | null;
+  description: string | null;
+  editable: boolean;
+  value_type: "string" | "number" | "boolean";
 }
 
 export interface AlertChannelRow {

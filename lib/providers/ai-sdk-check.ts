@@ -28,6 +28,7 @@ import type { CheckResult, HealthStatus, ProviderConfig } from "../types";
 import { DEFAULT_ENDPOINTS } from "../types";
 import { generateChallenge, validateResponse } from "./challenge";
 import { measureEndpointPing } from "./endpoint-ping";
+import { getSiteSettingSync } from "../core/site-settings";
 
 /* ============================================================================
  * 常量定义
@@ -37,7 +38,10 @@ import { measureEndpointPing } from "./endpoint-ping";
 const DEFAULT_TIMEOUT_MS = 45_000;
 
 /** 性能降级阈值（毫秒）- 超过此值标记为 degraded 状态 */
-const DEGRADED_THRESHOLD_MS = 6_000;
+function getDegradedThresholdMs(): number {
+  const v = Number(getSiteSettingSync("degraded_threshold_ms", "6000"));
+  return Number.isFinite(v) && v > 0 ? v : 6_000;
+}
 
 /** 需要从 metadata 中排除的字段，这些字段会与 streamText 内部参数冲突 */
 const EXCLUDED_METADATA_KEYS = new Set(["model", "prompt", "messages", "abortSignal"]);
@@ -542,7 +546,7 @@ export async function checkWithAiSdk(config: ProviderConfig): Promise<CheckResul
     }
 
     // 判定健康状态
-    const status: HealthStatus = latencyMs <= DEGRADED_THRESHOLD_MS ? "operational" : "degraded";
+    const status: HealthStatus = latencyMs <= getDegradedThresholdMs() ? "operational" : "degraded";
     const message = status === "degraded" ? `响应成功但耗时 ${latencyMs}ms` : `验证通过 (${latencyMs}ms)`;
 
     return buildCheckResult(params, status, latencyMs, message);

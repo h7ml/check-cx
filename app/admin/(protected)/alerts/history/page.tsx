@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Clock } from "lucide-react";
+import { Pagination } from "@/components/admin/pagination";
 
 interface HistoryRow {
   id: string;
@@ -27,16 +28,23 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default function AlertHistoryPage() {
-  const [history, setHistory] = useState<HistoryRow[]>([]);
+  const [history, setHistory]     = useState<HistoryRow[]>([]);
+  const [total, setTotal]         = useState(0);
+  const [page, setPage]           = useState(1);
+  const [pageSize, setPageSize]   = useState(50);
   const [statusFilter, setStatusFilter] = useState("");
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = useCallback(async () => {
-    const params = new URLSearchParams({ limit: "100" });
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
     if (statusFilter) params.set("status", statusFilter);
     const res = await fetch(`/api/admin/alerts/history?${params}`);
-    if (res.ok) setHistory(await res.json());
-  }, [statusFilter]);
+    if (res.ok) {
+      const json = await res.json();
+      setHistory(json.data ?? []);
+      setTotal(json.total ?? 0);
+    }
+  }, [page, pageSize, statusFilter]);
 
   useEffect(() => {
     load();
@@ -47,13 +55,20 @@ export default function AlertHistoryPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">告警历史</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-semibold">告警历史</h1>
+          {total > 0 && (
+            <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+              共 {total.toLocaleString()} 条
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
             自动刷新
           </span>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+          <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
             className="rounded-md border border-input bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring">
             <option value="">全部状态</option>
             <option value="sent">已发送</option>
@@ -99,12 +114,22 @@ export default function AlertHistoryPage() {
         </div>
         {history.length === 0 && (
           <div className="py-16 text-center">
-            <Clock className="mx-auto h-8 w-8 text-muted-foreground/30" />
+            <Clock className="mx-auto h-10 w-10 text-muted-foreground/30" />
             <p className="mt-3 text-sm font-medium">暂无告警历史</p>
-            <p className="mt-1 text-xs text-muted-foreground">告警触发后将在此处显示记录</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {statusFilter ? "当前筛选条件下没有匹配的记录" : "告警触发后将在此处显示记录"}
+            </p>
           </div>
         )}
       </div>
+
+      <Pagination
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        onPageChange={setPage}
+        onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+      />
     </div>
   );
 }

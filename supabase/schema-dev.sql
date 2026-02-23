@@ -57,7 +57,10 @@ CREATE TABLE dev.check_history (
 CREATE TABLE dev.group_info (
     id uuid NOT NULL DEFAULT gen_random_uuid(),
     group_name text NOT NULL,
+    display_name text,
+    description text,
     website_url text,
+    icon_url text,
     tags text DEFAULT ''::text NOT NULL,
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
@@ -71,8 +74,27 @@ CREATE TABLE dev.system_notifications (
     message text NOT NULL,
     is_active boolean DEFAULT true,
     level text DEFAULT 'info',
+    scope text NOT NULL DEFAULT 'public' CHECK (scope IN ('public', 'admin', 'both')),
+    start_time timestamptz,
+    end_time timestamptz,
     created_at timestamptz DEFAULT now()
 );
+
+-- 系统设置表
+CREATE TABLE dev.site_settings (
+    key          text PRIMARY KEY,
+    value        text,
+    description  text,
+    editable     boolean NOT NULL DEFAULT true,
+    value_type   text NOT NULL DEFAULT 'string'
+);
+
+INSERT INTO dev.site_settings (key, value, description, editable, value_type) VALUES
+    ('check_poll_interval_seconds', '60',   '检测轮询间隔（秒），重启后生效', true,  'number'),
+    ('degraded_threshold_ms',       '6000', '延迟超过此值判定为降级（毫秒）', true,  'number'),
+    ('max_concurrency',             '5',    '并发检测任务上限（1–20）',        true,  'number'),
+    ('history_retention_count',     '60',   '每个配置最多保留历史条数',        true,  'number')
+ON CONFLICT (key) DO NOTHING;
 
 -- 轮询主节点租约表（单行租约）
 CREATE TABLE dev.check_poller_leases (

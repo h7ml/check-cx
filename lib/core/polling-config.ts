@@ -1,3 +1,5 @@
+import { getSiteSettingSync } from "./site-settings";
+
 const DEFAULT_INTERVAL_SECONDS = 60;
 const MIN_INTERVAL_SECONDS = 15;
 const MAX_INTERVAL_SECONDS = 600;
@@ -13,7 +15,7 @@ const MIN_CHECK_CONCURRENCY = 1;
 const MAX_CHECK_CONCURRENCY = 20;
 
 function parseIntervalSeconds() {
-  const raw = process.env.CHECK_POLL_INTERVAL_SECONDS;
+  const raw = getSiteSettingSync("check_poll_interval_seconds", process.env.CHECK_POLL_INTERVAL_SECONDS ?? "");
   const parsed = Number(raw);
   if (Number.isFinite(parsed) && parsed > 0) {
     return parsed;
@@ -79,7 +81,7 @@ export function getOfficialStatusIntervalLabel() {
 }
 
 function parseCheckConcurrency() {
-  const raw = process.env.CHECK_CONCURRENCY;
+  const raw = getSiteSettingSync("max_concurrency", process.env.CHECK_CONCURRENCY ?? "");
   const parsed = Number(raw);
   if (Number.isFinite(parsed) && parsed > 0) {
     return parsed;

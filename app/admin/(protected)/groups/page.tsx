@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Pencil, Trash2, Plus, Layers } from "lucide-react";
 import { CrudDialog } from "@/components/admin/crud-dialog";
 import { GroupForm, GroupFormData, defaultGroupForm } from "@/components/admin/group-form";
+import { Pagination } from "@/components/admin/pagination";
 
 interface GroupRow {
   group_name: string;
@@ -15,6 +16,8 @@ interface GroupRow {
 
 export default function GroupsPage() {
   const [groups, setGroups] = useState<GroupRow[]>([]);
+  const [page, setPage]       = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editRow, setEditRow] = useState<GroupRow | null>(null);
@@ -81,7 +84,7 @@ export default function GroupsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {groups.map((row) => (
+            {groups.slice((page - 1) * pageSize, page * pageSize).map((row) => (
               <tr key={row.group_name} className="group hover:bg-muted/30 transition-colors">
                 <td className="px-3 py-2 font-mono text-xs font-medium">{row.group_name}</td>
                 <td className="px-3 py-2">{row.display_name ?? "—"}</td>
@@ -114,6 +117,14 @@ export default function GroupsPage() {
           </div>
         )}
       </div>
+
+      <Pagination
+        page={page}
+        pageSize={pageSize}
+        total={groups.length}
+        onPageChange={setPage}
+        onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+      />
 
       <CrudDialog open={dialogOpen} onOpenChange={setDialogOpen} title={editRow ? "编辑分组" : "新建分组"} onSubmit={handleSubmit} loading={loading}>
         <GroupForm data={form} onChange={setForm} isEdit={!!editRow} />

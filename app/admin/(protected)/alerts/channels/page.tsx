@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Pencil, Trash2, Plus, Radio } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { CrudDialog } from "@/components/admin/crud-dialog";
+import { Pagination } from "@/components/admin/pagination";
 
 type ChannelType = "webhook" | "feishu" | "dingtalk";
 
@@ -48,6 +49,8 @@ function defaultForm(): ChannelForm {
 
 export default function ChannelsPage() {
   const [channels, setChannels] = useState<ChannelRow[]>([]);
+  const [page, setPage]          = useState(1);
+  const [pageSize, setPageSize]  = useState(20);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editRow, setEditRow] = useState<ChannelRow | null>(null);
@@ -131,7 +134,7 @@ export default function ChannelsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {channels.map((row) => (
+            {channels.slice((page - 1) * pageSize, page * pageSize).map((row) => (
               <tr key={row.id} className="group hover:bg-muted/30 transition-colors">
                 <td className="px-3 py-2 font-medium">{row.name}</td>
                 <td className="px-3 py-2">
@@ -171,6 +174,14 @@ export default function ChannelsPage() {
           </div>
         )}
       </div>
+
+      <Pagination
+        page={page}
+        pageSize={pageSize}
+        total={channels.length}
+        onPageChange={setPage}
+        onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+      />
 
       <CrudDialog open={dialogOpen} onOpenChange={setDialogOpen} title={editRow ? "编辑渠道" : "新建渠道"} onSubmit={handleSubmit} loading={loading}>
         <div className="space-y-3">

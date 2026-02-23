@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Menu, Activity } from "lucide-react";
 import { AdminSidebar } from "./sidebar";
+import { AdminNoticeBanner } from "./admin-notice-banner";
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -46,6 +47,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             <span className="rounded-sm bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">Admin</span>
           </div>
         </header>
+
+        <AdminNoticeBanner />
 
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
       </div>
