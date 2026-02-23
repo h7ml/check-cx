@@ -10,13 +10,13 @@
 import "server-only";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
-// 开发模式使用 dev schema，生产模式使用 public schema
-const DB_SCHEMA = process.env.NODE_ENV === "development" ? "dev" : "public";
+const DB_SCHEMA = process.env.DB_SCHEMA ?? "public";
 
 /**
  * 创建管理员客户端（绕过 RLS）
  *
- * 注意：此客户端使用 service_role key，拥有完整的数据库访问权限
+ * 注意：Schema 默认 public，可通过 DB_SCHEMA 环境变量覆盖
+ * 此客户端使用 service_role key，拥有完整的数据库访问权限
  * 仅应在服务端后台任务中使用
  */
 export function createAdminClient() {

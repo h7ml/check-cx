@@ -10,6 +10,7 @@ import {
 } from "@/components/admin/stats-charts";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { cn } from "@/lib/utils";
+import { RefreshButton } from "@/components/admin/refresh-button";
 
 async function loadStats() {
   const admin = createAdminClient();
@@ -138,7 +139,10 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold">概览</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold">统计概览</h1>
+        <RefreshButton />
+      </div>
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
           title="活跃配置"

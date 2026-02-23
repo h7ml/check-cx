@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Settings, Bell, Users, LogOut, Activity, Radio, Zap, Clock, X } from "lucide-react";
+import { LayoutDashboard, Settings, Bell, Users, LogOut, Activity, Radio, Zap, Clock, X, ArrowUpRight, SlidersHorizontal, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  { href: "/admin", label: "概览", icon: LayoutDashboard, exact: true },
+  { href: "/admin", label: "统计概览", icon: LayoutDashboard, exact: true },
   { href: "/admin/configs", label: "配置管理", icon: Settings },
   { href: "/admin/groups", label: "分组管理", icon: Users },
   { href: "/admin/notifications", label: "通知管理", icon: Bell },
+  { href: "/admin/history", label: "检测历史", icon: History },
+  { href: "/admin/settings", label: "系统设置", icon: SlidersHorizontal },
 ];
 
 const ALERTS_NAV = [
@@ -64,10 +66,13 @@ export function AdminSidebar({ mobileClose }: AdminSidebarProps = {}) {
   return (
     <aside className="flex h-screen w-56 shrink-0 flex-col border-r border-border bg-card">
       <div className="flex h-14 items-center gap-2.5 border-b border-border px-4">
-        <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10">
-          <Activity className="h-3.5 w-3.5 text-primary" />
-        </div>
-        <span className="text-sm font-semibold tracking-tight">Check CX</span>
+        <Link href="/" className="flex items-center gap-2 min-w-0 group" title="返回前台">
+          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/10">
+            <Activity className="h-3.5 w-3.5 text-primary" />
+          </div>
+          <span className="text-sm font-semibold tracking-tight truncate">Check CX</span>
+          <ArrowUpRight className="h-3 w-3 shrink-0 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
+        </Link>
         {mobileClose ? (
           <button
             onClick={mobileClose}

@@ -8,6 +8,7 @@ import ReactMarkdown from "react-markdown";
 export interface NotificationFormData {
   message: string;
   level: string;
+  scope: string;
   start_time: string;
   end_time: string;
 }
@@ -22,18 +23,33 @@ export function NotificationForm({ data, onChange }: NotificationFormProps) {
 
   return (
     <div className="space-y-3">
-      <div className="space-y-1.5">
-        <Label>级别</Label>
-        <Select value={data.level} onValueChange={(v) => set("level", v)}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="info">Info</SelectItem>
-            <SelectItem value="warning">Warning</SelectItem>
-            <SelectItem value="error">Error</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label>级别</Label>
+          <Select value={data.level} onValueChange={(v) => set("level", v)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="info">信息</SelectItem>
+              <SelectItem value="warning">警告</SelectItem>
+              <SelectItem value="error">错误</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label>展示范围</Label>
+          <Select value={data.scope} onValueChange={(v) => set("scope", v)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="public">前台</SelectItem>
+              <SelectItem value="admin">后台</SelectItem>
+              <SelectItem value="both">前后台</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-3 items-start">
         <div className="space-y-1.5">
@@ -85,5 +101,5 @@ export function NotificationForm({ data, onChange }: NotificationFormProps) {
 }
 
 export const defaultNotificationForm = (): NotificationFormData => ({
-  message: "", level: "info", start_time: "", end_time: "",
+  message: "", level: "info", scope: "public", start_time: "", end_time: "",
 });

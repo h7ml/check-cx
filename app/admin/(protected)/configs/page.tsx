@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Pencil, Trash2, Plus, Settings } from "lucide-react";
+import { Pencil, Trash2, Plus, Settings, RefreshCw, Play, Loader2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { ProviderIcon } from "@/components/provider-icon";
 import { CrudDialog } from "@/components/admin/crud-dialog";
 import { ConfigForm, ConfigFormData, defaultConfigForm } from "@/components/admin/config-form";
+import { Pagination } from "@/components/admin/pagination";
 import type { ProviderType } from "@/lib/types";
 
 interface ConfigRow {
@@ -22,14 +23,32 @@ interface ConfigRow {
   metadata: unknown;
 }
 
+interface TestResult {
+  status: string;
+  latencyMs: number | null;
+  message: string | null;
+}
+
+const TEST_STATUS_STYLES: Record<string, string> = {
+  operational:       "bg-green-500/10 text-green-600",
+  degraded:          "bg-yellow-500/10 text-yellow-600",
+  failed:            "bg-red-500/10 text-red-600",
+  validation_failed: "bg-orange-500/10 text-orange-600",
+  error:             "bg-red-500/10 text-red-600",
+};
+
 export default function ConfigsPage() {
-  const [configs, setConfigs] = useState<ConfigRow[]>([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [editRow, setEditRow] = useState<ConfigRow | null>(null);
-  const [form, setForm] = useState<ConfigFormData>(defaultConfigForm());
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
+  const [configs, setConfigs]         = useState<ConfigRow[]>([]);
+  const [page, setPage]               = useState(1);
+  const [pageSize, setPageSize]       = useState(20);
+  const [dialogOpen, setDialogOpen]   = useState(false);
+  const [deleteId, setDeleteId]       = useState<string | null>(null);
+  const [editRow, setEditRow]         = useState<ConfigRow | null>(null);
+  const [form, setForm]               = useState<ConfigFormData>(defaultConfigForm());
+  const [loading, setLoading]         = useState(false);
+  const [msg, setMsg]                 = useState("");
+  const [testLoading, setTestLoading] = useState<Record<string, boolean>>({});
+  const [testResults, setTestResults] = useState<Record<string, TestResult>>({});
 
   const load = useCallback(async () => {
     const res = await fetch("/api/admin/configs");
@@ -104,14 +123,34 @@ export default function ConfigsPage() {
     load();
   }
 
+  async function runTest(id: string) {
+    setTestLoading((prev) => ({ ...prev, [id]: true }));
+    setTestResults((prev) => { const next = { ...prev }; delete next[id]; return next; });
+    try {
+      const res = await fetch(`/api/admin/configs/${id}/test`, { method: "POST" });
+      const data = await res.json();
+      setTestResults((prev) => ({ ...prev, [id]: data }));
+    } catch {
+      setTestResults((prev) => ({ ...prev, [id]: { status: "error", latencyMs: null, message: "请求失败" } }));
+    } finally {
+      setTestLoading((prev) => ({ ...prev, [id]: false }));
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">配置管理</h1>
-        <button onClick={openCreate} className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow-xs hover:bg-primary/90 active:scale-[0.98] transition-all">
-          <Plus className="h-4 w-4" />
-          新建配置
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={load} className="flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+            <RefreshCw className="h-3.5 w-3.5" />
+            刷新
+          </button>
+          <button onClick={openCreate} className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow-xs hover:bg-primary/90 active:scale-[0.98] transition-all">
+            <Plus className="h-4 w-4" />
+            新建配置
+          </button>
+        </div>
       </div>
 
       <div className="rounded-xl border border-border overflow-hidden">
@@ -131,37 +170,65 @@ export default function ConfigsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {configs.map((row) => (
-                <tr key={row.id} className="group hover:bg-muted/30 transition-colors">
-                  <td className="px-3 py-2.5 font-medium">{row.name}</td>
-                  <td className="px-3 py-2.5">
-                    <div className="flex items-center gap-1.5">
-                      <ProviderIcon type={row.type as ProviderType} size={14} />
-                      <span className="hidden sm:inline capitalize text-sm">{row.type}</span>
-                    </div>
-                  </td>
-                  <td className="hidden sm:table-cell px-3 py-2.5 text-muted-foreground font-mono text-xs">{row.model}</td>
-                  <td className="hidden md:table-cell px-3 py-2.5 text-muted-foreground text-xs truncate max-w-[180px]">{row.endpoint}</td>
-                  <td className="hidden sm:table-cell px-3 py-2.5 text-muted-foreground text-xs">{row.group_name ?? "—"}</td>
-                  <td className="hidden lg:table-cell px-3 py-2.5 font-mono text-xs text-muted-foreground">{row.api_key}</td>
-                  <td className="px-3 py-2.5">
-                    <Switch checked={row.enabled} onCheckedChange={(v) => toggleField(row.id, "enabled", v)} />
-                  </td>
-                  <td className="hidden sm:table-cell px-3 py-2.5">
-                    <Switch checked={row.is_maintenance} onCheckedChange={(v) => toggleField(row.id, "is_maintenance", v)} />
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => openEdit(row)} className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                      <button onClick={() => setDeleteId(row.id)} className="rounded p-1 text-muted-foreground hover:text-destructive hover:bg-muted transition-colors">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {configs.slice((page - 1) * pageSize, page * pageSize).map((row) => {
+                const tr = testResults[row.id];
+                const tl = testLoading[row.id];
+                return (
+                  <tr key={row.id} className="group hover:bg-muted/30 transition-colors">
+                    <td className="px-3 py-2.5 font-medium">{row.name}</td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center gap-1.5">
+                        <ProviderIcon type={row.type as ProviderType} size={14} />
+                        <span className="hidden sm:inline capitalize text-sm">{row.type}</span>
+                      </div>
+                    </td>
+                    <td className="hidden sm:table-cell px-3 py-2.5 text-muted-foreground font-mono text-xs">{row.model}</td>
+                    <td className="hidden md:table-cell px-3 py-2.5 text-muted-foreground text-xs truncate max-w-[180px]">{row.endpoint}</td>
+                    <td className="hidden sm:table-cell px-3 py-2.5 text-muted-foreground text-xs">{row.group_name ?? "—"}</td>
+                    <td className="hidden lg:table-cell px-3 py-2.5 font-mono text-xs text-muted-foreground">{row.api_key}</td>
+                    <td className="px-3 py-2.5">
+                      <Switch checked={row.enabled} onCheckedChange={(v) => toggleField(row.id, "enabled", v)} />
+                    </td>
+                    <td className="hidden sm:table-cell px-3 py-2.5">
+                      <Switch checked={row.is_maintenance} onCheckedChange={(v) => toggleField(row.id, "is_maintenance", v)} />
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center gap-1.5">
+                        {/* 测试结果 */}
+                        {tr && (
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${TEST_STATUS_STYLES[tr.status] ?? "bg-muted text-muted-foreground"}`}
+                            title={tr.message ?? undefined}
+                          >
+                            {tr.status}
+                            {tr.latencyMs != null && <span className="opacity-70">{tr.latencyMs}ms</span>}
+                          </span>
+                        )}
+                        {/* 操作按钮（hover 显示） */}
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => runTest(row.id)}
+                            disabled={tl}
+                            className="rounded p-1 text-muted-foreground hover:text-primary hover:bg-muted transition-colors disabled:opacity-50"
+                            title="即时测试"
+                          >
+                            {tl
+                              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              : <Play className="h-3.5 w-3.5" />
+                            }
+                          </button>
+                          <button onClick={() => openEdit(row)} className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button onClick={() => setDeleteId(row.id)} className="rounded p-1 text-muted-foreground hover:text-destructive hover:bg-muted transition-colors">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -173,6 +240,14 @@ export default function ConfigsPage() {
           </div>
         )}
       </div>
+
+      <Pagination
+        page={page}
+        pageSize={pageSize}
+        total={configs.length}
+        onPageChange={setPage}
+        onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+      />
 
       <CrudDialog open={dialogOpen} onOpenChange={setDialogOpen} title={editRow ? "编辑配置" : "新建配置"} onSubmit={handleSubmit} loading={loading}>
         <ConfigForm data={form} onChange={setForm} isEdit={!!editRow} />

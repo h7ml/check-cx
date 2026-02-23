@@ -1,0 +1,3 @@
+ALTER TABLE public.system_notifications
+  ADD COLUMN IF NOT EXISTS start_time TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS end_time TIMESTAMPTZ;
