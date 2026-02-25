@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Pencil, Trash2, Plus, Layers, Search, PlayCircle, Loader2, RefreshCw } from "lucide-react";
+import { Pencil, Trash2, Plus, Layers, Search, PlayCircle, Loader2, RefreshCw, MoreHorizontal } from "lucide-react";
 import { CrudDialog } from "@/components/admin/crud-dialog";
 import { GroupForm, GroupFormData, defaultGroupForm } from "@/components/admin/group-form";
 import { Pagination } from "@/components/admin/pagination";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface GroupRow {
   group_name: string;
@@ -233,22 +234,26 @@ export default function GroupsPage() {
                             <span className="text-red-600">{tr.failed}</span>
                           </span>
                         )}
-                        <div className="flex items-center gap-1 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
-                          <button
-                            onClick={() => runGroupTest(row.group_name)}
-                            disabled={tl}
-                            className="rounded p-1 text-muted-foreground hover:text-primary hover:bg-muted transition-colors disabled:opacity-50"
-                            title="测试该分组所有配置"
-                          >
-                            {tl ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PlayCircle className="h-3.5 w-3.5" />}
-                          </button>
-                          <button onClick={() => openEdit(row)} className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted">
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
-                          <button onClick={() => setDeleteId(row.group_name)} className="rounded p-1 text-muted-foreground hover:text-destructive hover:bg-muted">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                              <MoreHorizontal className="h-3.5 w-3.5" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => runGroupTest(row.group_name)} disabled={tl}>
+                              {tl ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PlayCircle className="h-3.5 w-3.5" />}
+                              测试分组
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openEdit(row)}>
+                              <Pencil className="h-3.5 w-3.5" />编辑
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => setDeleteId(row.group_name)} className="text-destructive focus:text-destructive">
+                              <Trash2 className="h-3.5 w-3.5" />删除
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </td>
                   </tr>

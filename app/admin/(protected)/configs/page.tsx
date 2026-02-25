@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Pencil, Trash2, Plus, Settings, RefreshCw, Play, Loader2, Copy, PlayCircle, Search } from "lucide-react";
+import { Pencil, Trash2, Plus, Settings, RefreshCw, Play, Loader2, Copy, PlayCircle, Search, MoreHorizontal } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { ProviderIcon } from "@/components/provider-icon";
 import { CrudDialog } from "@/components/admin/crud-dialog";
 import { ConfigForm, ConfigFormData, defaultConfigForm } from "@/components/admin/config-form";
 import { Pagination } from "@/components/admin/pagination";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { ProviderType } from "@/lib/types";
 
 interface ConfigRow {
@@ -317,20 +318,29 @@ export default function ConfigsPage() {
                             {tr.latencyMs != null && <span className="opacity-70">{tr.latencyMs}ms</span>}
                           </span>
                         )}
-                        <div className="flex items-center gap-1 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
-                          <button onClick={() => runTest(row.id)} disabled={tl} className="rounded p-1 text-muted-foreground hover:text-primary hover:bg-muted transition-colors disabled:opacity-50" title="即时测试">
-                            {tl ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
-                          </button>
-                          <button onClick={() => openEdit(row)} className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
-                          <button onClick={() => openCopy(row)} className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="复制配置">
-                            <Copy className="h-3.5 w-3.5" />
-                          </button>
-                          <button onClick={() => setDeleteId(row.id)} className="rounded p-1 text-muted-foreground hover:text-destructive hover:bg-muted transition-colors">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                              <MoreHorizontal className="h-3.5 w-3.5" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => runTest(row.id)} disabled={tl}>
+                              {tl ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+                              测试
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openEdit(row)}>
+                              <Pencil className="h-3.5 w-3.5" />编辑
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openCopy(row)}>
+                              <Copy className="h-3.5 w-3.5" />复制
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => setDeleteId(row.id)} className="text-destructive focus:text-destructive">
+                              <Trash2 className="h-3.5 w-3.5" />删除
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </td>
                   </tr>
