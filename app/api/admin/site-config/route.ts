@@ -1,0 +1,64 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+
+async function requireAuth() {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  return data?.claims ?? null;
+}
+
+/**
+ * 获取所有前台配置项
+ */
+export async function GET() {
+  if (!(await requireAuth())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("site_settings")
+    .select("key,value,description,editable")
+    .in("key", ["site.title", "site.description", "site.logo_url", "site.favicon_url"]);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json(data);
+}
+
+/**
+ * 更新前台配置项
+ */
+export async function PUT(request: NextRequest) {
+  if (!(await requireAuth())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = await request.json();
+  const { key, value } = body;
+
+  if (!key || !value) {
+    return NextResponse.json({ error: "key 和 value 必填" }, { status: 400 });
+  }
+
+  // 仅允许编辑前台配置
+  const allowedKeys = ["site.title", "site.description", "site.logo_url", "site.favicon_url"];
+  if (!allowedKeys.includes(key)) {
+    return NextResponse.json({ error: "不允许编辑此配置项" }, { status: 403 });
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("site_settings")
+    .update({ value })
+    .eq("key", key);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
+}
