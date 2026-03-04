@@ -3,6 +3,7 @@ import { requireAuth } from "../../../alerts/_auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runProviderChecks } from "@/lib/providers";
 import { appendHistory } from "@/lib/database/history";
+import { evaluateAlerts } from "@/lib/core/alert-engine";
 import type { ProviderConfig, ProviderType } from "@/lib/types";
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -37,6 +38,9 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
 
   // 写入历史记录
   await appendHistory([result]);
+
+  // 手动检测同样触发告警规则评估
+  await evaluateAlerts(result.id, result.name, result.status, result.latencyMs ?? null).catch(() => {});
 
   return NextResponse.json({
     status: result.status,
