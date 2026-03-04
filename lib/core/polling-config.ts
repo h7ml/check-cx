@@ -2,7 +2,7 @@ import { getSiteSettingSync } from "./site-settings";
 
 const DEFAULT_INTERVAL_SECONDS = 60;
 const MIN_INTERVAL_SECONDS = 15;
-const MAX_INTERVAL_SECONDS = 600;
+const MAX_INTERVAL_SECONDS = 3600; // 最长 1 小时
 
 // 官方状态检查默认间隔(5 分钟)
 const DEFAULT_OFFICIAL_STATUS_INTERVAL_SECONDS = 300;
