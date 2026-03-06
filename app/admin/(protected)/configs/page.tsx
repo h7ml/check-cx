@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Pencil, Trash2, Plus, Settings, RefreshCw, Play, Loader2, Copy, PlayCircle, Search, MoreHorizontal } from "lucide-react";
+import { Pencil, Trash2, Plus, Settings, RefreshCw, Play, Loader2, Copy, PlayCircle, Search, MoreHorizontal, ListPlus, Key, Link } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { ProviderIcon } from "@/components/provider-icon";
 import { CrudDialog } from "@/components/admin/crud-dialog";
 import { ConfigForm, ConfigFormData, defaultConfigForm } from "@/components/admin/config-form";
+import { BatchConfigForm, BatchConfigFormData, defaultBatchConfigForm } from "@/components/admin/batch-config-form";
 import { Pagination } from "@/components/admin/pagination";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { ProviderType } from "@/lib/types";
 
@@ -45,10 +48,16 @@ export default function ConfigsPage() {
   const [page, setPage]                 = useState(1);
   const [pageSize, setPageSize]         = useState(20);
   const [dialogOpen, setDialogOpen]     = useState(false);
+  const [batchDialogOpen, setBatchDialogOpen] = useState(false);
+  const [batchKeyDialogOpen, setBatchKeyDialogOpen] = useState(false);
+  const [batchEndpointDialogOpen, setBatchEndpointDialogOpen] = useState(false);
   const [deleteId, setDeleteId]         = useState<string | null>(null);
   const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
   const [editRow, setEditRow]           = useState<ConfigRow | null>(null);
   const [form, setForm]                 = useState<ConfigFormData>(defaultConfigForm());
+  const [batchForm, setBatchForm]       = useState<BatchConfigFormData>(defaultBatchConfigForm());
+  const [newApiKey, setNewApiKey]       = useState("");
+  const [newEndpoint, setNewEndpoint]   = useState("");
   const [loading, setLoading]           = useState(false);
   const [msg, setMsg]                   = useState("");
   const [testLoading, setTestLoading]   = useState<Record<string, boolean>>({});
@@ -82,6 +91,11 @@ export default function ConfigsPage() {
     setEditRow(null);
     setForm(defaultConfigForm());
     setDialogOpen(true);
+  }
+
+  function openBatchCreate() {
+    setBatchForm(defaultBatchConfigForm());
+    setBatchDialogOpen(true);
   }
 
   function openCopy(row: ConfigRow) {
@@ -144,6 +158,49 @@ export default function ConfigsPage() {
     else { const d = await res.json(); setMsg(d.error ?? "操作失败"); }
   }
 
+  async function handleBatchSubmit() {
+    if (!batchForm.type || !batchForm.endpoint || !batchForm.api_key || batchForm.selectedModels.size === 0) {
+      setMsg("请填写必填字段并至少选择一个模型");
+      return;
+    }
+    setLoading(true);
+    setMsg("");
+    let reqHeader: unknown = null;
+    let meta: unknown = null;
+    try {
+      if (batchForm.request_header.trim()) reqHeader = JSON.parse(batchForm.request_header);
+      if (batchForm.metadata.trim()) meta = JSON.parse(batchForm.metadata);
+    } catch {
+      setMsg("JSON 格式错误");
+      setLoading(false);
+      return;
+    }
+    const body = {
+      type: batchForm.type,
+      endpoint: batchForm.endpoint,
+      api_key: batchForm.api_key,
+      models: Array.from(batchForm.selectedModels),
+      group_name: batchForm.group_name || null,
+      request_header: reqHeader,
+      metadata: meta,
+      enabled: batchForm.enabled,
+      is_maintenance: batchForm.is_maintenance,
+    };
+    const res = await fetch("/api/admin/configs/batch-create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    setLoading(false);
+    if (res.ok) {
+      setBatchDialogOpen(false);
+      load();
+    } else {
+      const d = await res.json();
+      setMsg(d.error ?? "批量创建失败");
+    }
+  }
+
   async function handleDelete(id: string) {
     await fetch(`/api/admin/configs/${id}`, { method: "DELETE" });
     setDeleteId(null);
@@ -155,6 +212,102 @@ export default function ConfigsPage() {
     setSelected(new Set());
     setBatchDeleteOpen(false);
     load();
+  }
+
+  function openBatchUpdateKey() {
+    if (selected.size === 0) return;
+
+    // 检查选中的配置是否属于同一 Provider 类型
+    const selectedConfigs = configs.filter((c) => selected.has(c.id));
+    const types = new Set(selectedConfigs.map((c) => c.type));
+
+    if (types.size > 1) {
+      setMsg("只能批量修改相同 Provider 类型的配置");
+      return;
+    }
+
+    setNewApiKey("");
+    setMsg("");
+    setBatchKeyDialogOpen(true);
+  }
+
+  function openBatchUpdateEndpoint() {
+    if (selected.size === 0) return;
+
+    // 检查选中的配置是否属于同一 Provider 类型
+    const selectedConfigs = configs.filter((c) => selected.has(c.id));
+    const types = new Set(selectedConfigs.map((c) => c.type));
+
+    if (types.size > 1) {
+      setMsg("只能批量修改相同 Provider 类型的配置");
+      return;
+    }
+
+    setNewEndpoint("");
+    setMsg("");
+    setBatchEndpointDialogOpen(true);
+  }
+
+  async function handleBatchUpdateKey() {
+    if (!newApiKey.trim()) {
+      setMsg("请输入新的 API Key");
+      return;
+    }
+
+    setLoading(true);
+    setMsg("");
+
+    try {
+      const res = await fetch("/api/admin/configs/batch-update-key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [...selected], api_key: newApiKey }),
+      });
+
+      if (res.ok) {
+        setBatchKeyDialogOpen(false);
+        setSelected(new Set());
+        load();
+      } else {
+        const data = await res.json();
+        setMsg(data.error ?? "批量更新失败");
+      }
+    } catch {
+      setMsg("请求失败");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleBatchUpdateEndpoint() {
+    if (!newEndpoint.trim()) {
+      setMsg("请输入新的端点 URL");
+      return;
+    }
+
+    setLoading(true);
+    setMsg("");
+
+    try {
+      const res = await fetch("/api/admin/configs/batch-update-endpoint", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [...selected], endpoint: newEndpoint }),
+      });
+
+      if (res.ok) {
+        setBatchEndpointDialogOpen(false);
+        setSelected(new Set());
+        load();
+      } else {
+        const data = await res.json();
+        setMsg(data.error ?? "批量更新失败");
+      }
+    } catch {
+      setMsg("请求失败");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function toggleField(id: string, field: "enabled" | "is_maintenance", value: boolean) {
@@ -239,6 +392,10 @@ export default function ConfigsPage() {
           <RefreshCw className="h-3.5 w-3.5" />
           刷新
         </button>
+        <button onClick={openBatchCreate} className="inline-flex items-center gap-1.5 rounded-md border border-primary bg-background px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 transition-all">
+          <ListPlus className="h-4 w-4" />
+          批量添加
+        </button>
         <button onClick={openCreate} className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow-xs hover:bg-primary/90 active:scale-[0.98] transition-all">
           <Plus className="h-4 w-4" />
           新建配置
@@ -252,6 +409,20 @@ export default function ConfigsPage() {
           <div className="flex items-center gap-2">
             <button onClick={() => setSelected(new Set())} className="rounded-md px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted transition-colors">
               取消选择
+            </button>
+            <button
+              onClick={openBatchUpdateEndpoint}
+              className="inline-flex items-center gap-1.5 rounded-md border border-primary bg-background px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 transition-all"
+            >
+              <Link className="h-3.5 w-3.5" />
+              批量修改端点
+            </button>
+            <button
+              onClick={openBatchUpdateKey}
+              className="inline-flex items-center gap-1.5 rounded-md border border-primary bg-background px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 transition-all"
+            >
+              <Key className="h-3.5 w-3.5" />
+              批量修改 Key
             </button>
             <button
               onClick={runBatchTest}
@@ -386,6 +557,51 @@ export default function ConfigsPage() {
       <CrudDialog open={dialogOpen} onOpenChange={setDialogOpen} title={editRow ? "编辑配置" : "新建配置"} onSubmit={handleSubmit} loading={loading}>
         <ConfigForm data={form} onChange={setForm} isEdit={!!editRow} groups={groups} />
         {msg && <p className="text-sm text-destructive">{msg}</p>}
+      </CrudDialog>
+
+      <CrudDialog open={batchDialogOpen} onOpenChange={setBatchDialogOpen} title="批量添加配置" onSubmit={handleBatchSubmit} loading={loading}>
+        <BatchConfigForm data={batchForm} onChange={setBatchForm} groups={groups} />
+        {msg && <p className="text-sm text-destructive">{msg}</p>}
+      </CrudDialog>
+
+      <CrudDialog open={batchKeyDialogOpen} onOpenChange={setBatchKeyDialogOpen} title="批量修改 API Key" onSubmit={handleBatchUpdateKey} loading={loading}>
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            将为已选 <strong>{selected.size}</strong> 条配置更新 API Key
+          </p>
+          <div className="space-y-1.5">
+            <Label htmlFor="new-api-key">新的 API Key *</Label>
+            <Input
+              id="new-api-key"
+              type="password"
+              required
+              value={newApiKey}
+              onChange={(e) => setNewApiKey(e.target.value)}
+              placeholder="sk-..."
+            />
+          </div>
+          {msg && <p className="text-sm text-destructive">{msg}</p>}
+        </div>
+      </CrudDialog>
+
+      <CrudDialog open={batchEndpointDialogOpen} onOpenChange={setBatchEndpointDialogOpen} title="批量修改端点" onSubmit={handleBatchUpdateEndpoint} loading={loading}>
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            将为已选 <strong>{selected.size}</strong> 条配置更新端点 URL
+          </p>
+          <div className="space-y-1.5">
+            <Label htmlFor="new-endpoint">新的端点 URL *</Label>
+            <Input
+              id="new-endpoint"
+              type="url"
+              required
+              value={newEndpoint}
+              onChange={(e) => setNewEndpoint(e.target.value)}
+              placeholder="https://api.openai.com/v1/chat/completions"
+            />
+          </div>
+          {msg && <p className="text-sm text-destructive">{msg}</p>}
+        </div>
       </CrudDialog>
 
       <CrudDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)} title="确认删除" onSubmit={() => deleteId && handleDelete(deleteId)}>
