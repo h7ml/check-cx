@@ -18,7 +18,7 @@
  * - 端点 Ping 延迟测量
  */
 
-import { streamText, generateText } from "ai";
+import { streamText } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
@@ -89,6 +89,49 @@ function extractGoogleBaseURL(endpoint: string): string {
 function deriveBaseURL(endpoint: string): string {
   const [pathWithoutQuery] = endpoint.split("?");
   return pathWithoutQuery.replace(API_PATH_SUFFIX_REGEX, "");
+}
+
+/**
+ * 将配置端点上的查询参数合并到实际请求 URL 中
+ *
+ * SDK 在内部会基于 baseURL 重新拼接请求地址，导致配置在 endpoint 上的查询参数丢失。
+ * 这里统一把配置参数补回去，避免出现“配置了但请求没带上”的破事。
+ */
+function mergeEndpointQueryParams(
+  input: RequestInfo | URL,
+  endpoint: string
+): RequestInfo | URL {
+  let requestUrl: URL;
+
+  try {
+    requestUrl = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
+  } catch {
+    return input;
+  }
+
+  let endpointUrl: URL;
+  try {
+    endpointUrl = new URL(endpoint);
+  } catch {
+    return input;
+  }
+
+  if (!endpointUrl.search) {
+    return input;
+  }
+
+  for (const key of new Set(endpointUrl.searchParams.keys())) {
+    requestUrl.searchParams.delete(key);
+    for (const value of endpointUrl.searchParams.getAll(key)) {
+      requestUrl.searchParams.append(key, value);
+    }
+  }
+
+  if (input instanceof Request) {
+    return new Request(requestUrl, input);
+  }
+
+  return requestUrl;
 }
 
 /**
@@ -219,10 +262,13 @@ function filterMetadata(
  * @param headers - 要注入的自定义请求头
  */
 function createCustomFetch(
+  endpoint: string,
   metadata: Record<string, unknown> | null,
   headers: Record<string, string>
 ): typeof fetch {
   return async (input: RequestInfo | URL, init?: RequestInit) => {
+    const requestInput = mergeEndpointQueryParams(input, endpoint);
+
     // 使用 Headers API 确保用户 headers 完全覆盖 SDK headers
     const mergedHeaders = new Headers(init?.headers);
     for (const [key, value] of Object.entries(headers)) {
@@ -231,21 +277,21 @@ function createCustomFetch(
 
     // 非 POST 请求或无 body 时，仅注入 headers
     if (init?.method?.toUpperCase() !== "POST" || !init.body) {
-      return fetch(input, { ...init, headers: mergedHeaders });
+      return fetch(requestInput, { ...init, headers: mergedHeaders });
     }
 
     // POST 请求：尝试将 metadata 合并到请求体
     try {
       const originalBody = typeof init.body === "string" ? JSON.parse(init.body) : init.body;
       const mergedBody = metadata ? { ...originalBody, ...metadata } : originalBody;
-      return fetch(input, {
+      return fetch(requestInput, {
         ...init,
         headers: mergedHeaders,
         body: JSON.stringify(mergedBody),
       });
     } catch {
       // JSON 解析失败时，仅注入 headers
-      return fetch(input, { ...init, headers: mergedHeaders });
+      return fetch(requestInput, { ...init, headers: mergedHeaders });
     }
   };
 }
@@ -275,7 +321,7 @@ function createModel(config: ProviderConfig) {
     "User-Agent": "check-cx/0.1.0",
     ...config.requestHeaders,
   };
-  const customFetch = createCustomFetch(filterMetadata(config.metadata), headers);
+  const customFetch = createCustomFetch(endpoint, filterMetadata(config.metadata), headers);
 
   switch (config.type) {
     case "openai": {
