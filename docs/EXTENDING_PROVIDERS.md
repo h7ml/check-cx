@@ -63,9 +63,25 @@ case "myvendor": {
 新增 Provider 后，插入配置：
 
 ```sql
-INSERT INTO check_configs (name, type, model, endpoint, api_key, enabled)
-VALUES ('MyVendor 主力', 'myvendor', 'my-model', 'https://api.myvendor.com/v1/chat/completions', 'sk-xxx', true);
+-- 1) 注册模型
+INSERT INTO check_models (type, model)
+VALUES ('myvendor', 'my-model')
+ON CONFLICT (type, model) DO NOTHING;
+
+-- 2) 绑定到配置实例
+INSERT INTO check_configs (name, type, model_id, endpoint, api_key, enabled)
+SELECT 'MyVendor 主力',
+       'myvendor',
+       id,
+       'https://api.myvendor.com/v1/chat/completions',
+       'sk-xxx',
+       true
+FROM check_models
+WHERE type = 'myvendor'
+  AND model = 'my-model';
 ```
+
+如果同一模型需要统一默认参数，可直接更新 `check_models.request_header` / `check_models.metadata`。实例级差异再放到 `check_configs`。
 
 ## 5. 验证清单
 
@@ -73,4 +89,3 @@ VALUES ('MyVendor 主力', 'myvendor', 'my-model', 'https://api.myvendor.com/v1/
 - Dashboard 卡片可见并显示延迟
 - 官方状态（若已实现）显示正确
 - 状态 API `GET /api/v1/status` 返回新 Provider
-

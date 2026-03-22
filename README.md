@@ -56,13 +56,22 @@ CHECK_CONCURRENCY=5
 ### 5. 添加最小配置
 
 ```sql
-INSERT INTO check_configs (name, type, model, endpoint, api_key, enabled)
-VALUES ('OpenAI GPT-4o',
-        'openai',
-        'gpt-4o-mini',
-        'https://api.openai.com/v1/chat/completions',
-        'sk-your-api-key',
-        true);
+-- 1) 先创建模型
+INSERT INTO check_models (type, model)
+VALUES ('openai', 'gpt-4o-mini')
+ON CONFLICT (type, model) DO NOTHING;
+
+-- 2) 再创建配置实例
+INSERT INTO check_configs (name, type, model_id, endpoint, api_key, enabled)
+SELECT 'OpenAI GPT-4o',
+       'openai',
+       id,
+       'https://api.openai.com/v1/chat/completions',
+       'sk-your-api-key',
+       true
+FROM check_models
+WHERE type = 'openai'
+  AND model = 'gpt-4o-mini';
 ```
 
 ### 6. 启动开发服务器
@@ -101,14 +110,17 @@ pnpm lint   # 代码检查
 
 ### Provider 配置要点
 
+- `check_models` 用于统一维护模型定义与模型级默认参数，`check_configs` 通过 `model_id` 关联模型。
 - `check_configs.type` 目前支持 `openai` / `gemini` / `anthropic`。
 - `endpoint` 必须是完整端点：
     - `/v1/chat/completions` 使用 Chat Completions
     - `/v1/responses` 使用 Responses API
-- `request_header` 与 `metadata` 允许注入自定义请求头与请求体参数。
+- `check_models.request_header` / `check_models.metadata` 用于同一模型的统一默认值。
+- `check_configs.request_header` 与 `check_configs.metadata` 用于实例级覆盖。
 - 可选 `template_id` 关联 `check_request_templates`，用于复用默认请求头与 metadata。
 - `check_request_templates.type` 必须与 `check_configs.type` 一致（如 `anthropic` 只能绑定 `anthropic` 模板）。
-- 合并优先级：`template` < `check_configs`（实例配置覆盖模板同名字段）。
+- `check_configs.model_id` 关联的模型类型必须与 `check_configs.type` 一致。
+- 合并优先级：`template` < `check_models` < `check_configs`。
 - `is_maintenance = true` 会保留卡片但停止轮询；`enabled = false` 则完全不纳入检测。
 
 ## API 概览

@@ -6,7 +6,7 @@ import "server-only";
 import {createAdminClient} from "../supabase/admin";
 import {getPollingIntervalMs} from "../core/polling-config";
 import type {CheckConfigRow, ProviderConfig, ProviderType} from "../types";
-import type {CheckRequestTemplateRow} from "../types/database";
+import type {CheckModelRow, CheckRequestTemplateRow} from "../types/database";
 import {logError} from "../utils";
 
 interface ConfigCache {
@@ -21,10 +21,12 @@ interface ConfigCacheMetrics {
 
 type JsonRecord = Record<string, unknown>;
 type TemplateProjection = Pick<CheckRequestTemplateRow, "type" | "request_header" | "metadata">;
+type ModelProjection = Pick<CheckModelRow, "id" | "type" | "model" | "request_header" | "metadata">;
 type ConfigRowWithTemplate = Pick<
   CheckConfigRow,
-  "id" | "name" | "type" | "model" | "endpoint" | "api_key" | "is_maintenance" | "template_id" | "request_header" | "metadata" | "group_name"
+  "id" | "name" | "type" | "model_id" | "endpoint" | "api_key" | "is_maintenance" | "template_id" | "request_header" | "metadata" | "group_name"
 > & {
+  check_models?: ModelProjection | ModelProjection[] | null;
   check_request_templates?: TemplateProjection | TemplateProjection[] | null;
 };
 
@@ -80,6 +82,18 @@ function getTemplate(row: ConfigRowWithTemplate): TemplateProjection | null {
   return template;
 }
 
+function getModel(row: ConfigRowWithTemplate): ModelProjection | null {
+  const model = Array.isArray(row.check_models)
+    ? row.check_models[0]
+    : row.check_models;
+
+  if (!model || model.type !== row.type) {
+    return null;
+  }
+
+  return model;
+}
+
 /**
  * 从数据库加载启用的 Provider 配置
  * @returns Provider 配置列表
@@ -100,7 +114,7 @@ export async function loadProviderConfigsFromDB(options?: {
     const { data, error } = await supabase
       .from("check_configs")
       .select(
-        "id, name, type, model, endpoint, api_key, is_maintenance, template_id, request_header, metadata, group_name, check_request_templates(type, request_header, metadata)"
+        "id, name, type, model_id, endpoint, api_key, is_maintenance, template_id, request_header, metadata, group_name, check_models(id, type, model, request_header, metadata), check_request_templates(type, request_header, metadata)"
       )
       .eq("enabled", true)
       .order("id");
@@ -119,16 +133,23 @@ export async function loadProviderConfigsFromDB(options?: {
 
     const configs: ProviderConfig[] = data.map(
       (row: ConfigRowWithTemplate) => {
+        const model = getModel(row);
         const template = getTemplate(row);
-        const mergedRequestHeaders = mergeTemplateAndConfig(template?.request_header, row.request_header) as Record<string, string> | null;
-        const mergedMetadata = mergeTemplateAndConfig(template?.metadata, row.metadata);
+        const mergedRequestHeaders = mergeTemplateAndConfig(
+          mergeTemplateAndConfig(template?.request_header, model?.request_header),
+          row.request_header
+        ) as Record<string, string> | null;
+        const mergedMetadata = mergeTemplateAndConfig(
+          mergeTemplateAndConfig(template?.metadata, model?.metadata),
+          row.metadata
+        );
 
         return {
           id: row.id,
           name: row.name,
           type: row.type as ProviderType,
           endpoint: row.endpoint,
-          model: row.model,
+          model: model?.model ?? "",
           apiKey: row.api_key,
           is_maintenance: row.is_maintenance,
           requestHeaders: mergedRequestHeaders,

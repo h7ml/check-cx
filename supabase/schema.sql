@@ -33,12 +33,34 @@ COMMENT ON COLUMN public.check_request_templates.metadata IS '模板默认 metad
 COMMENT ON COLUMN public.check_request_templates.created_at IS '创建时间';
 COMMENT ON COLUMN public.check_request_templates.updated_at IS '更新时间';
 
+-- 模型配置表：存储可复用的模型定义与模型级默认参数
+CREATE TABLE public.check_models (
+    id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    type            public.provider_type NOT NULL,
+    model           text NOT NULL,
+    request_header  jsonb,
+    metadata        jsonb,
+    created_at      timestamptz DEFAULT now(),
+    updated_at      timestamptz DEFAULT now(),
+
+    CONSTRAINT check_models_type_model_key UNIQUE (type, model)
+);
+
+COMMENT ON TABLE public.check_models IS '模型配置表，存储可复用的模型定义与模型级默认参数';
+COMMENT ON COLUMN public.check_models.id IS '模型 UUID';
+COMMENT ON COLUMN public.check_models.type IS '模型提供商类型: openai, gemini, anthropic';
+COMMENT ON COLUMN public.check_models.model IS '模型名称，如 gpt-4o-mini';
+COMMENT ON COLUMN public.check_models.request_header IS '模型默认请求头 (JSONB)';
+COMMENT ON COLUMN public.check_models.metadata IS '模型默认 metadata，请求体参数 (JSONB)';
+COMMENT ON COLUMN public.check_models.created_at IS '创建时间';
+COMMENT ON COLUMN public.check_models.updated_at IS '更新时间';
+
 -- 配置表：存储 AI 服务商的 API 配置
 CREATE TABLE public.check_configs (
     id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     name            text NOT NULL,
     type            public.provider_type NOT NULL,
-    model           text NOT NULL,
+    model_id        uuid NOT NULL REFERENCES public.check_models(id) ON DELETE RESTRICT,
     endpoint        text NOT NULL,
     api_key         text NOT NULL,
     enabled         boolean DEFAULT true,
@@ -55,7 +77,7 @@ COMMENT ON TABLE public.check_configs IS 'AI 服务商配置表';
 COMMENT ON COLUMN public.check_configs.id IS '配置 UUID';
 COMMENT ON COLUMN public.check_configs.name IS '配置显示名称';
 COMMENT ON COLUMN public.check_configs.type IS '提供商类型: openai, gemini, anthropic';
-COMMENT ON COLUMN public.check_configs.model IS '模型名称，如 gpt-4o-mini';
+COMMENT ON COLUMN public.check_configs.model_id IS '模型 ID，关联 check_models.id';
 COMMENT ON COLUMN public.check_configs.endpoint IS 'API 端点 URL';
 COMMENT ON COLUMN public.check_configs.api_key IS 'API 密钥';
 COMMENT ON COLUMN public.check_configs.enabled IS '是否启用检测';
@@ -145,6 +167,7 @@ CREATE INDEX idx_check_history_config_id ON public.check_history (config_id);
 CREATE INDEX idx_check_history_checked_at ON public.check_history (checked_at DESC);
 CREATE INDEX idx_history_config_checked ON public.check_history (config_id, checked_at DESC);
 CREATE INDEX idx_check_configs_template_id ON public.check_configs (template_id);
+CREATE INDEX idx_check_configs_model_id ON public.check_configs (model_id);
 
 -- -----------------------------------------------------------------------------
 -- 4. 视图
@@ -229,6 +252,30 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.validate_check_config_model_type()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    linked_model_type public.provider_type;
+BEGIN
+    SELECT type
+    INTO linked_model_type
+    FROM public.check_models
+    WHERE id = NEW.model_id;
+
+    IF linked_model_type IS NULL THEN
+        RETURN NEW;
+    END IF;
+
+    IF linked_model_type <> NEW.type THEN
+        RAISE EXCEPTION '模型类型不匹配: config.type=%, model.type=%', NEW.type, linked_model_type;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
 -- -----------------------------------------------------------------------------
 -- 6. 触发器
 -- -----------------------------------------------------------------------------
@@ -242,6 +289,16 @@ CREATE TRIGGER validate_check_configs_template_type
     BEFORE INSERT OR UPDATE OF template_id, type ON public.check_configs
     FOR EACH ROW
     EXECUTE FUNCTION public.validate_check_config_template_type();
+
+CREATE TRIGGER validate_check_configs_model_type
+    BEFORE INSERT OR UPDATE OF model_id, type ON public.check_configs
+    FOR EACH ROW
+    EXECUTE FUNCTION public.validate_check_config_model_type();
+
+CREATE TRIGGER update_check_models_updated_at
+    BEFORE UPDATE ON public.check_models
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_updated_at_column();
 
 CREATE TRIGGER update_check_request_templates_updated_at
     BEFORE UPDATE ON public.check_request_templates
@@ -258,6 +315,7 @@ CREATE TRIGGER update_group_info_updated_at
 -- -----------------------------------------------------------------------------
 
 ALTER TABLE public.check_configs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.check_models ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.check_request_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.check_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.group_info ENABLE ROW LEVEL SECURITY;
@@ -332,11 +390,12 @@ AS $$
         r.message,
         c.name,
         c.type::text,
-        c.model,
+        m.model,
         c.endpoint,
         c.group_name
     FROM ranked r
     JOIN check_configs c ON c.id = r.config_id
+    JOIN check_models m ON m.id = c.model_id
     WHERE r.rn <= limit_per_config
     ORDER BY c.name ASC, r.checked_at DESC;
 $$;
