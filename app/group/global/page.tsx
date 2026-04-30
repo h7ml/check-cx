@@ -5,6 +5,7 @@ import { ClientYear } from "@/components/client-time";
 import { GlobalGroupHealthPanel } from "@/components/global-group-health-panel";
 import { loadGlobalGroupHealth } from "@/lib/core/global-group-health";
 import { getSiteSeoConfig, toAbsoluteUrl } from "@/lib/core/site-seo";
+import type { GlobalGroupHealthWindow } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -37,7 +38,26 @@ export async function generateMetadata() {
   };
 }
 
-export default async function GlobalGroupPage() {
+const VALID_WINDOWS: GlobalGroupHealthWindow[] = ["1h", "6h", "12h", "24h"];
+
+export default async function GlobalGroupPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{
+    q?: string;
+    search?: string;
+    view?: string;
+    sort?: string;
+    window?: string;
+  }>;
+}) {
+  const params = (await searchParams) ?? {};
+  const initialWindow = VALID_WINDOWS.includes(params.window as GlobalGroupHealthWindow)
+    ? (params.window as GlobalGroupHealthWindow)
+    : "24h";
+  const viewMode = params.view === "list" ? "list" : "card";
+  const sortMode = params.sort === "group" || params.sort === "name" ? params.sort : "custom";
+  const searchQuery = params.q ?? params.search ?? "";
   const [siteSeo, globalGroupHealth] = await Promise.all([
     getSiteSeoConfig(),
     loadGlobalGroupHealth(),
@@ -70,6 +90,10 @@ export default async function GlobalGroupPage() {
           summary={globalGroupHealth}
           className="mb-0"
           showDetailLink={false}
+          searchQuery={searchQuery}
+          sortMode={sortMode}
+          viewMode={viewMode}
+          initialWindow={initialWindow}
         />
       </main>
 

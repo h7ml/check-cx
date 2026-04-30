@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertCircle, ChevronDown, Clock, Copy, ExternalLink, Search, Zap } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -28,6 +28,9 @@ interface GlobalGroupHealthPanelProps {
   onOpenChange?: (open: boolean) => void;
   className?: string;
   showDetailLink?: boolean;
+  analysisHref?: string;
+  initialWindow?: GlobalGroupHealthWindow;
+  onWindowChange?: (window: GlobalGroupHealthWindow) => void;
 }
 
 const percentFormatter = new Intl.NumberFormat("zh-CN", {
@@ -58,18 +61,73 @@ export function GlobalGroupHealthPanel({
   onOpenChange,
   className,
   showDetailLink = true,
+  analysisHref,
+  initialWindow,
+  onWindowChange,
 }: GlobalGroupHealthPanelProps) {
   const [internalOpen, setInternalOpen] = useState(true);
   const [localSummary, setLocalSummary] = useState(summary);
   const [loadingWindow, setLoadingWindow] = useState<GlobalGroupHealthWindow | null>(null);
+  const requestedWindowRef = useRef(new Set<GlobalGroupHealthWindow>());
   const [selectedWindow, setSelectedWindow] = useState<GlobalGroupHealthWindow>(
-    summary?.defaultWindow ?? "24h"
+    initialWindow ?? summary?.defaultWindow ?? "24h"
   );
 
   const open = isOpen ?? internalOpen;
   const handleOpenChange = onOpenChange ?? setInternalOpen;
   const activeSummary = localSummary ?? summary;
   const available = activeSummary?.available === true;
+
+  useEffect(() => {
+    if (initialWindow && initialWindow !== selectedWindow) {
+      setSelectedWindow(initialWindow);
+    }
+  }, [initialWindow, selectedWindow]);
+
+  useEffect(() => {
+    if (!activeSummary || !initialWindow || initialWindow === activeSummary.defaultWindow) {
+      return;
+    }
+    const hasWindowData = (activeSummary.itemsByWindow[initialWindow] ?? []).length > 0;
+    if (
+      hasWindowData ||
+      loadingWindow === initialWindow ||
+      requestedWindowRef.current.has(initialWindow)
+    ) {
+      return;
+    }
+    requestedWindowRef.current.add(initialWindow);
+    setLoadingWindow(initialWindow);
+    fetch(`/api/global-group-health?window=${initialWindow}`, {cache: "no-store"})
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`global_group_health_${response.status}`);
+        }
+        return response.json() as Promise<GlobalGroupHealthSummary>;
+      })
+      .then((nextSummary) => {
+        setLocalSummary((prev) => {
+          const base = prev ?? activeSummary;
+          return {
+            ...base,
+            available: nextSummary.available,
+            enabled: nextSummary.enabled,
+            updatedAt: nextSummary.updatedAt ?? base.updatedAt,
+            message: nextSummary.message,
+            showErrorReasons: nextSummary.showErrorReasons,
+            itemsByWindow: {
+              ...base.itemsByWindow,
+              [initialWindow]: nextSummary.itemsByWindow[initialWindow] ?? [],
+            },
+          };
+        });
+      })
+      .catch(() => {
+        toast.error(`${WINDOW_LABEL[initialWindow]} 全局分组读取失败`);
+      })
+      .finally(() => setLoadingWindow(null));
+  }, [activeSummary, initialWindow, loadingWindow]);
+
   const items = useMemo(() => {
     const baseItems = activeSummary?.itemsByWindow[selectedWindow] ?? [];
     const query = searchQuery.trim().toLowerCase();
@@ -104,6 +162,7 @@ export function GlobalGroupHealthPanel({
     : activeSummary?.message ?? "全局分组监控暂不可用";
   const handleWindowChange = async (window: GlobalGroupHealthWindow) => {
     setSelectedWindow(window);
+    onWindowChange?.(window);
     const hasWindowData = (activeSummary.itemsByWindow[window] ?? []).length > 0;
     if (hasWindowData || loadingWindow === window) {
       return;
@@ -211,6 +270,15 @@ export function GlobalGroupHealthPanel({
             className="hidden shrink-0 items-center gap-1.5 rounded-full border border-border/60 bg-background/50 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground sm:flex"
           >
             故障定位
+            <ExternalLink className="h-3 w-3" />
+          </Link>
+        )}
+        {analysisHref && (
+          <Link
+            href={analysisHref}
+            className="hidden shrink-0 items-center gap-1.5 rounded-full border border-border/60 bg-background/50 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground transition-all hover:-translate-y-0.5 hover:text-foreground active:translate-y-0 active:scale-95 sm:flex"
+          >
+            分析监控信息
             <ExternalLink className="h-3 w-3" />
           </Link>
         )}

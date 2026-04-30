@@ -1,6 +1,7 @@
 "use client";
 
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {usePathname, useRouter, useSearchParams} from "next/navigation";
 import {fetchWithCache, prefetchDashboardData, setCache} from "@/lib/core/frontend-cache";
 import {prefetchGroupData} from "@/lib/core/group-frontend-cache";
 import Link from "next/link";
@@ -46,6 +47,7 @@ import type {
   AvailabilityPeriod,
   AvailabilityStatsMap,
   DashboardData,
+  GlobalGroupHealthWindow,
   GroupedProviderTimelines,
   GroupInfoSummary,
   ProviderTimeline,
@@ -92,6 +94,7 @@ const PERIOD_OPTIONS: Array<{ value: AvailabilityPeriod; label: string }> = [
 
 type SortMode = "custom" | "group" | "name";
 type ViewMode = "card" | "list";
+type GroupsParam = "open" | "closed" | null;
 
 const SORT_OPTIONS: Array<{ value: SortMode; label: string }> = [
   { value: "custom", label: "自定义" },
@@ -104,6 +107,22 @@ const CONTROL_BUTTON_CLASS =
 
 const DEFAULT_SITE_TITLE = "Check CX - AI 模型健康监控";
 const DEFAULT_SITE_DESCRIPTION = "实时追踪各大 AI 模型对话接口的可用性、延迟与官方服务状态。";
+const VALID_PERIODS: AvailabilityPeriod[] = ["7d", "15d", "30d"];
+const VALID_SORT_MODES: SortMode[] = ["custom", "group", "name"];
+const VALID_VIEW_MODES: ViewMode[] = ["card", "list"];
+const VALID_GLOBAL_WINDOWS: GlobalGroupHealthWindow[] = ["1h", "6h", "12h", "24h"];
+
+function getValidParam<T extends string>(value: string | null, validValues: readonly T[]): T | null {
+  return validValues.includes(value as T) ? (value as T) : null;
+}
+
+function setOptionalParam(params: URLSearchParams, key: string, value: string): void {
+  if (value) {
+    params.set(key, value);
+    return;
+  }
+  params.delete(key);
+}
 
 // 未分组标识常量
 const UNGROUPED_KEY = "__ungrouped__";
@@ -421,6 +440,12 @@ function GroupPanel({
  * - 在浏览器端按 pollIntervalMs 定时拉取 /api/dashboard 并维护倒计时
  */
 export function DashboardView({ initialData, siteConfig }: DashboardViewProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const hasUrlStateRef = useRef(false);
+  const hasHydratedUrlStateRef = useRef(false);
+  const lastUrlStateRef = useRef("");
   const [data, setData] = useState(initialData);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -449,6 +474,7 @@ export function DashboardView({ initialData, siteConfig }: DashboardViewProps) {
   const isPeriodLoading = isRefreshing && selectedPeriod !== data.trendPeriod;
   const [openGroupNames, setOpenGroupNames] = useState<Set<string>>(() => new Set());
   const [isGlobalGroupHealthOpen, setIsGlobalGroupHealthOpen] = useState(false);
+  const [globalWindow, setGlobalWindow] = useState<GlobalGroupHealthWindow>("24h");
   const prevSearchActiveRef = useRef(false);
 
   const initialGroupedTimelines = useMemo(
@@ -467,6 +493,18 @@ export function DashboardView({ initialData, siteConfig }: DashboardViewProps) {
     () => new Map(groupedTimelines.map((group) => [group.groupName, group])),
     [groupedTimelines]
   );
+  const analysisHref = useMemo(() => {
+    const params = new URLSearchParams();
+    const query = searchQuery.trim();
+    if (query) {
+      params.set("q", query);
+    }
+    params.set("view", viewMode);
+    params.set("sort", sortMode);
+    params.set("window", globalWindow);
+    const qs = params.toString();
+    return qs ? `/group/global?${qs}` : "/group/global";
+  }, [globalWindow, searchQuery, sortMode, viewMode]);
 
   const persistedGroupOrder = siteConfig?.groupOrder;
 
@@ -503,8 +541,52 @@ export function DashboardView({ initialData, siteConfig }: DashboardViewProps) {
   }, []);
 
   useEffect(() => {
+    const params = searchParams;
+    hasUrlStateRef.current = params.size > 0;
+    const query = params.get("q") ?? params.get("search");
+    const nextSortMode = getValidParam(params.get("sort"), VALID_SORT_MODES);
+    const nextViewMode = getValidParam(params.get("view"), VALID_VIEW_MODES);
+    const nextPeriod = getValidParam(params.get("period"), VALID_PERIODS);
+    const nextGlobalWindow = getValidParam(params.get("window"), VALID_GLOBAL_WINDOWS);
+    const globalOpen = params.get("global") === "1" || params.get("global") === "open";
+    const groupsParam: GroupsParam =
+      params.get("groups") === "open" || params.get("groups") === "closed"
+        ? (params.get("groups") as GroupsParam)
+        : null;
+
+    if (query !== null) {
+      setSearchQuery(query);
+    }
+    if (nextSortMode) {
+      setSortMode(nextSortMode);
+    }
+    if (nextViewMode) {
+      setViewMode(nextViewMode);
+    }
+    if (nextPeriod) {
+      setSelectedPeriod(nextPeriod);
+    }
+    if (nextGlobalWindow) {
+      setGlobalWindow(nextGlobalWindow);
+      setIsGlobalGroupHealthOpen(true);
+    } else if (globalOpen) {
+      setIsGlobalGroupHealthOpen(true);
+    }
+    if (groupsParam === "open") {
+      setOpenGroupNames(new Set(groupedNames));
+    } else if (groupsParam === "closed") {
+      setOpenGroupNames(new Set());
+    }
+
+  }, [groupedNames, searchParams]);
+
+  useEffect(() => {
     // Client-side only: load from localStorage
     if (typeof window !== "undefined") {
+      if (hasUrlStateRef.current) {
+        hasHydratedUrlStateRef.current = true;
+        return;
+      }
       // Load sort mode
       const savedSortMode = localStorage.getItem("check-cx-sort-mode");
       if (savedSortMode && ["custom", "group", "name"].includes(savedSortMode)) {
@@ -554,6 +636,7 @@ export function DashboardView({ initialData, siteConfig }: DashboardViewProps) {
       if (savedViewMode && ["card", "list"].includes(savedViewMode)) {
         setViewMode(savedViewMode as ViewMode);
       }
+      hasHydratedUrlStateRef.current = true;
     }
   }, [initialGroupedTimelines, persistedGroupOrder]);
 
@@ -900,6 +983,54 @@ export function DashboardView({ initialData, siteConfig }: DashboardViewProps) {
       filteredGroupNames.every((groupName) => !openGroupNames.has(groupName)),
     [filteredGroupNames, isGlobalGroupHealthOpen, openGroupNames]
   );
+  const groupsUrlState: GroupsParam = useMemo(() => {
+    if (
+      filteredGroupNames.length > 0 &&
+      filteredGroupNames.every((groupName) => openGroupNames.has(groupName))
+    ) {
+      return "open";
+    }
+    if (filteredGroupNames.every((groupName) => !openGroupNames.has(groupName))) {
+      return "closed";
+    }
+    return null;
+  }, [filteredGroupNames, openGroupNames]);
+
+  useEffect(() => {
+    if (!hasHydratedUrlStateRef.current) {
+      return;
+    }
+
+    const params = new URLSearchParams(searchParams.toString());
+    const query = searchQuery.trim();
+    setOptionalParam(params, "q", query);
+    setOptionalParam(params, "view", viewMode === "card" ? "" : viewMode);
+    setOptionalParam(params, "sort", sortMode === "custom" ? "" : sortMode);
+    setOptionalParam(params, "period", selectedPeriod === "7d" ? "" : selectedPeriod);
+    setOptionalParam(params, "global", isGlobalGroupHealthOpen ? "1" : "");
+    setOptionalParam(params, "window", globalWindow === "24h" ? "" : globalWindow);
+    setOptionalParam(params, "groups", groupsUrlState ?? "");
+
+    const nextUrlState = params.toString();
+    if (lastUrlStateRef.current === nextUrlState) {
+      return;
+    }
+    lastUrlStateRef.current = nextUrlState;
+    router.replace(nextUrlState ? `${pathname}?${nextUrlState}` : pathname, {
+      scroll: false,
+    });
+  }, [
+    globalWindow,
+    groupsUrlState,
+    isGlobalGroupHealthOpen,
+    pathname,
+    router,
+    searchParams,
+    searchQuery,
+    selectedPeriod,
+    sortMode,
+    viewMode,
+  ]);
 
   const groupedPanels = filteredGroupNames.length === 0 ? (
     <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border/50 bg-muted/20 py-20 text-center">
@@ -1255,6 +1386,9 @@ export function DashboardView({ initialData, siteConfig }: DashboardViewProps) {
           viewMode={viewMode}
           isOpen={isGlobalGroupHealthOpen}
           onOpenChange={setIsGlobalGroupHealthOpen}
+          initialWindow={globalWindow}
+          onWindowChange={setGlobalWindow}
+          analysisHref={analysisHref}
         />
         {total === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border/50 bg-muted/20 py-20 text-center">
