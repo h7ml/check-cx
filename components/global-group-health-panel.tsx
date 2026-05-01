@@ -50,6 +50,7 @@ const WINDOW_LABEL: Record<GlobalGroupHealthWindow, string> = {
 
 const TROUBLESHOOTING_URL =
   "https://doc.fishxcode.com/faq#%E5%A6%82%E4%BD%95%E6%9F%A5%E7%9C%8B%E5%92%8C%E7%90%86%E8%A7%A3%E9%94%99%E8%AF%AF%E6%97%A5%E5%BF%97";
+const GROUP_HEALTH_DOC_URL = "https://doc.fishxcode.com/group-health";
 const PRICING_URL = "https://fishxcode.com/pricing";
 
 export function GlobalGroupHealthPanel({
@@ -273,6 +274,15 @@ export function GlobalGroupHealthPanel({
             <ExternalLink className="h-3 w-3" />
           </Link>
         )}
+        <Link
+          href={GROUP_HEALTH_DOC_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hidden shrink-0 items-center gap-1.5 rounded-full border border-border/60 bg-background/50 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground transition-all hover:-translate-y-0.5 hover:text-foreground active:translate-y-0 active:scale-95 sm:flex"
+        >
+          说明文档
+          <ExternalLink className="h-3 w-3" />
+        </Link>
         {analysisHref && (
           <Link
             href={analysisHref}
