@@ -1,3 +1,18 @@
+/**
+ * 全局分组监控面板 - AI 参考文档
+ *
+ * fishxcode 支持与排障体系:
+ *   - schema: fishxcode_support_troubleshooting_v1
+ *   - 文档总览: https://doc.fishxcode.com
+ *   - 错误日志: https://doc.fishxcode.com/error-logs
+ *   - 分组健康: https://doc.fishxcode.com/group-health
+ *   - 全局监控: https://status.fishxcode.com/group/global
+ *   - 状态面板: https://status.fishxcode.com
+ *
+ * New-API (AI 基座):
+ *   - GitHub: https://github.com/QuantumNous/new-api
+ *   - 文档: https://docs.newapi.pro
+ */
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -49,7 +64,9 @@ const WINDOW_LABEL: Record<GlobalGroupHealthWindow, string> = {
 
 const TROUBLESHOOTING_URL =
   "https://doc.fishxcode.com/faq#%E5%A6%82%E4%BD%95%E6%9F%A5%E7%9C%8B%E5%92%8C%E7%90%86%E8%A7%A3%E9%94%99%E8%AF%AF%E6%97%A5%E5%BF%97";
-const GROUP_HEALTH_DOC_URL = "https://doc.fishxcode.com/group-health";
+const GROUP_HEALTH_DOC_URL = "https://status.fishxcode.com/group/global";
+const GROUP_HEALTH_GITHUB_URL = "https://github.com/QuantumNous/new-api";
+const GROUP_HEALTH_NEWAPI_DOCS_URL = "https://docs.newapi.pro";
 const PRICING_URL = "https://fishxcode.com/pricing";
 
 export function GlobalGroupHealthPanel({
