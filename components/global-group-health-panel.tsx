@@ -421,7 +421,6 @@ function GlobalGroupHealthCard({
                 {item.errorReasons.map((reason, index) => (
                   <ErrorReasonRow
                     key={`${item.group}-${reason.statusCode}-${index}`}
-                    reasonKey={`${item.group}-${reason.statusCode}-${index}`}
                     statusCode={reason.statusCode}
                     count={reason.count}
                     content={reason.content}
@@ -485,7 +484,6 @@ function GlobalGroupHealthCard({
               {item.errorReasons.map((reason, index) => (
                 <ErrorReasonRow
                   key={`${item.group}-${reason.statusCode}-${index}`}
-                  reasonKey={`${item.group}-${reason.statusCode}-${index}`}
                   statusCode={reason.statusCode}
                   count={reason.count}
                   content={reason.content}
@@ -510,18 +508,29 @@ function GlobalGroupHealthCard({
 }
 
 function ErrorReasonRow({
-  reasonKey,
   statusCode,
   count,
   content,
 }: {
-  reasonKey: string;
   statusCode: string;
   count: number;
   content: string;
 }) {
   const askAiUrl = `https://t3.chat/new?q=${encodeURIComponent(
-    `请分析以下 https://www.fishxcode.com/ 中转站错误日志：\n\nstatus_code=${statusCode}, ${content}`
+    `请分析以下 https://www.fishxcode.com/ 中转站错误日志：
+
+参考文档：
+- 中转站: https://fishxcode.com
+- 文档总览: https://doc.fishxcode.com
+- 错误日志说明: https://doc.fishxcode.com/error-logs
+- 分组健康说明: https://doc.fishxcode.com/group-health
+- 全局监控面板: https://status.fishxcode.com/group/global
+- 状态面板: https://status.fishxcode.com
+- New-API GitHub: https://github.com/QuantumNous/new-api
+- New-API 文档: https://docs.newapi.pro
+
+错误日志详情：
+status_code=${statusCode}, ${content}`
   )}`;
   return (
     <div className="min-w-0 rounded-lg bg-muted/30 px-2 py-1.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted/50">

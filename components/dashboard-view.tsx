@@ -110,7 +110,7 @@ const DEFAULT_SITE_DESCRIPTION = "实时追踪各大 AI 模型对话接口的可
 const VALID_PERIODS: AvailabilityPeriod[] = ["7d", "15d", "30d"];
 const VALID_SORT_MODES: SortMode[] = ["custom", "group", "name"];
 const VALID_VIEW_MODES: ViewMode[] = ["card", "list"];
-const VALID_GLOBAL_WINDOWS: GlobalGroupHealthWindow[] = ["1h", "6h", "12h", "24h"];
+const VALID_GLOBAL_WINDOWS: GlobalGroupHealthWindow[] = ["1h", "6h", "12h", "24h", "7d", "15d", "30d"];
 
 function getValidParam<T extends string>(value: string | null, validValues: readonly T[]): T | null {
   return validValues.includes(value as T) ? (value as T) : null;
