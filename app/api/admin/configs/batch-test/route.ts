@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("check_configs")
-    .select("id,name,type,model,endpoint,api_key,is_maintenance,request_header,metadata,group_name")
+    .select("id,name,type,model,endpoint,api_key,is_maintenance,request_header,metadata,group_name,stream_mode")
     .in("id", ids);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
     requestHeaders: (d.request_header as Record<string, string>) || null,
     metadata: (d.metadata as Record<string, unknown>) || null,
     groupName: d.group_name || null,
+    streamMode: d.stream_mode || null,
   }));
 
   const results = await runChecksForConfigs(configs);

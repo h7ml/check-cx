@@ -13,7 +13,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
 
   const { data, error } = await admin
     .from("check_configs")
-    .select("id,name,type,model,endpoint,api_key,is_maintenance,request_header,metadata,group_name")
+    .select("id,name,type,model,endpoint,api_key,is_maintenance,request_header,metadata,group_name,stream_mode")
     .eq("id", id)
     .single();
 
@@ -30,6 +30,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     requestHeaders: (data.request_header as Record<string, string>) || null,
     metadata: (data.metadata as Record<string, unknown>) || null,
     groupName: data.group_name || null,
+    streamMode: data.stream_mode || null,
   };
 
   const [result] = await runChecksForConfigs([config]);

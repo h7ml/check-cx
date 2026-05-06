@@ -39,6 +39,7 @@ function mapConfig(row: Record<string, unknown>): ProviderConfig {
     requestHeaders: (row.request_header as Record<string, string>) || null,
     metadata: (row.metadata as Record<string, unknown>) || null,
     groupName: (row.group_name as string | null) || null,
+    streamMode: (row.stream_mode as ProviderConfig["streamMode"]) || null,
   };
 }
 
@@ -46,7 +47,7 @@ async function loadConfigsByIds(ids: string[]): Promise<ProviderConfig[]> {
   const admin = createAdminClient();
   const {data, error} = await admin
     .from("check_configs")
-    .select("id,name,type,model,endpoint,api_key,is_maintenance,request_header,metadata,group_name")
+    .select("id,name,type,model,endpoint,api_key,is_maintenance,request_header,metadata,group_name,stream_mode")
     .in("id", ids)
     .order("name");
 
